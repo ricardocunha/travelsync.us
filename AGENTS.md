@@ -8,13 +8,13 @@ Do not assume application code, scripts, or package manifests exist unless they 
 
 Current visible workspace structure:
 
-- `/Users/ricardocunha/dev/personal/travelsync/AGENTS.md`: repo-wide guidance
-- `/Users/ricardocunha/dev/personal/travelsync/BUSINESS_LOGIC_SPEC.md`: source of truth for product and business behavior
-- `/Users/ricardocunha/dev/personal/travelsync/DESIGN.md`: engineering philosophy and design notes
-- `/Users/ricardocunha/dev/personal/travelsync/apps/agents`: reserved for the AI agents workspace
-- `/Users/ricardocunha/dev/personal/travelsync/apps/api`: reserved for backend API integration
-- `/Users/ricardocunha/dev/personal/travelsync/apps/web`: reserved for frontend work
-- `/Users/ricardocunha/dev/personal/travelsync/apps/tests`: reserved for shared tests and fixtures
+- `AGENTS.md`: repo-wide guidance
+- `BUSINESS_LOGIC_SPEC.md`: source of truth for product and business behavior
+- `DESIGN.md`: engineering philosophy and design notes
+- `apps/agents`: reserved for the AI agents workspace
+- `apps/api`: reserved for backend API integration
+- `apps/web`: reserved for frontend work
+- `apps/tests`: reserved for shared tests and fixtures
 
 If a workspace contains its own `AGENTS.md`, the closest file to the edited path wins.
 
@@ -64,6 +64,26 @@ Do not run non-read-only commands against shared environments without explicit a
 - precedence: the closest applicable `AGENTS.md` wins
 - root file: keep repo-wide guidance and shared mental models here
 - leaf files: keep only workspace-specific rules, constraints, and local context
+
+## Current Workspace Layout
+
+- `apps/web`: Frontend UI application.
+- `apps/api`: Backend API application.
+- `apps/api/cmd`: Base main definition
+- `apps/api/internal/config`: Configurations for environment
+- `apps/api/internal/database`: GORM for Postgres
+- `apps/api/internal/models`: Database models
+- `apps/api/internal/repository`: Database models
+- `apps/api/internal/service`: Database models
+- `apps/api/internal/amadeus`: Database models
+- `apps/api/internal/ai`: Database models
+- `apps/api/internal/handler`: Database models
+- `apps/api/internal/router`: Configurations for environment
+- `apps/data/sql`: Local for sql files
+- `apps/tests`: Reusable fixtures for tests and scenarios.
+- `apps`: docker-compose files, .env templates
+- `tf`: Terraform infrastructure definition
+- `scripts`: Shared shell automation for complex root workflows.
 
 ## Engineering Principles
 
@@ -117,3 +137,4 @@ Prefer writing that is:
 - easy to scan
 
 Avoid stale templates copied from unrelated projects. Every `AGENTS.md` should describe this repository, not a generic framework example.
+
