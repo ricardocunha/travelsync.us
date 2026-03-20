@@ -1,44 +1,87 @@
 # API Workspace Guide
 
+## Tech Stack
+
+Go
+
 ## Scope
 
-`apps/api` is a thin HTTP boundary over the agent layer in `/Users/ricardocunha/dev/personal/travelsync/apps/agents`.
+`apps/api` is the backend HTTP application for Travel Sync.
 
-Current implemented routes:
+This workspace should own:
 
-- `GET /health`
-- `POST /api/v1/agents/itinerary`
+- HTTP routing and request handling
+- configuration loading for the API process
+- validation at the transport boundary
+- orchestration of backend workflows
+- integration with the Python agent layer in `/Users/ricardocunha/dev/personal/travelsync/apps/agents`
+- stable JSON contracts returned to the frontend
+
+This workspace should not own:
+
+- prompt construction
+- LangChain orchestration
+- direct OpenAI, Exa, or Firecrawl SDK usage
+- agent-specific citation or source-normalization logic
+
+## Architecture Direction
+
+The expected boundary is:
+
+```text
+apps/web -> apps/api (Go) -> apps/agents (Python) -> OpenAI / Exa / Firecrawl
+```
+
+Keep `apps/api` focused on transport, application flow, and backend composition.
 
 ## Local Rules
 
-- Keep request parsing, status codes, and transport concerns here.
-- Keep prompts, provider SDK calls, and orchestration logic in `travel_sync_agents`.
-- Reuse agent-layer schemas and services instead of duplicating domain models.
-- Prefer small, explicit handlers over framework-heavy abstractions unless the API surface grows enough to justify them.
+- Prefer standard Go project layout under `cmd/` and `internal/`.
+- Keep handlers thin; move business orchestration into services.
+- Define explicit request and response structs for API payloads.
+- Normalize external or agent-layer failures into stable API error categories.
+- Do not duplicate prompt or agent logic in Go.
+- If the API needs AI functionality, call a narrow service boundary instead of rebuilding the workflow here.
 
-## Current Layout
+## Expected Layout
+
+When implementation grows, prefer this shape:
 
 ```text
 apps/api/
-  src/travel_sync_api/
-    app.py
-    server.py
-  tests/unit/
+  cmd/
+  internal/
+    config/
+    handler/
+    router/
+    service/
+    ai/
 ```
 
-## Local Commands
+The exact folders can evolve, but keep transport and orchestration concerns separate.
 
-- `uv run travelsync-api`
-- `uv run pytest apps/api/tests/unit`
-- `uv run mypy apps/api/src`
+## Error Handling
 
-## Error Mapping
+This workspace is responsible for mapping backend failures into clear API responses.
 
-This package is responsible for mapping:
+Typical categories:
 
-- invalid JSON -> `400`
-- validation failures -> `400`
-- agent configuration errors -> `500`
-- external provider failures -> `502`
+- invalid request
+- not found
+- conflict
+- upstream agent failure
+- configuration error
+- internal server error
 
-Do not leak raw provider responses or credentials through API errors.
+Do not leak provider secrets, raw prompts, or internal tokens in errors.
+
+## Testing
+
+- Keep Go unit tests close to the code they validate.
+- Use `apps/tests` for browser and end-to-end validation, not for basic handler unit tests.
+- Mock the agent integration boundary in API tests instead of requiring live AI calls.
+
+## Notes
+
+- `apps/agents` remains Python by design.
+- `apps/api` should be Go even if temporary scaffolding from earlier iterations exists in the repo.
