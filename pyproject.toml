@@ -1,0 +1,46 @@
+[project]
+name = "travelsync-workspace"
+version = "0.1.0"
+description = "Travel Sync workspace"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "mypy",
+  "pytest",
+  "ruff",
+]
+
+[tool.uv.workspace]
+members = ["apps/agents", "apps/api"]
+
+[tool.pytest.ini_options]
+testpaths = ["apps/agents/tests", "apps/api/tests"]
+pythonpath = ["apps/agents/src", "apps/api/src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+plugins = []
+
+[[tool.mypy.overrides]]
+module = [
+  "exa_py",
+  "exa_py.*",
+  "firecrawl",
+  "firecrawl.*",
+  "langchain_core",
+  "langchain_core.*",
+  "langchain_openai",
+  "langchain_openai.*",
+]
+ignore_missing_imports = true

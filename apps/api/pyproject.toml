@@ -1,0 +1,23 @@
+[project]
+name = "travel-sync-api"
+version = "0.1.0"
+description = "Travel Sync API"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic",
+  "python-dotenv",
+  "travel-sync-agents",
+]
+
+[project.scripts]
+travelsync-api = "travel_sync_api.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/travel_sync_api"]
+
+[tool.uv.sources]
+travel-sync-agents = { workspace = true }
