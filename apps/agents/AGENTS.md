@@ -1,5 +1,9 @@
 # Agents Workspace Guide
 
+## Tech Stack
+
+Python
+
 ## Scope
 
 `apps/agents` is the dedicated workspace for Travel Sync's AI agent layer.
