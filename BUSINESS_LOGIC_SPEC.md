@@ -16,7 +16,7 @@ The system supports:
 
 - Multi-origin team composition (participants from different cities/countries)
 - Curated destination catalog (70+ cities across 7 regions)
-- Real-time flight search via Amadeus API for all origin-destination combinations. This will be also made by AI Agents
+- Real-time flight search via Amadeus API for all origin-destination combinations
 - Round-trip flight optimization (outbound and return)
 - Arrival time synchronization (backward scheduling from event start)
 - Destination ranking by cost, travel time, and arrival spread
@@ -322,32 +322,25 @@ For each flight option found:
 
 ## 9. AI-Powered Recommendation and Itinerary Drafting
 
-### 9.1 Current AI Stack
+### 9.1 Recommendation Provider
 
-The current AI layer is built around:
+Destination recommendation should support a configurable AI provider.
 
-- `LangChain` for orchestration and structured output
-- `OpenAI` for synthesis
-- `Exa` for search and discovery
-- `Firecrawl` for webpage retrieval and extraction
-
-Important claims should be grounded in retrieved sources, not model memory alone.
-
-### 9.2 Destination Recommendation
-
-Recommendation logic still follows the core interface:
+Shared interface:
 
 ```
 Recommend(teamComposition, topDestinations, scores) -> RecommendationResult
 ```
 
-Inputs to the recommendation agent:
+The product requirement is that recommendation logic can be fulfilled by either Claude or OpenAI, as selected by environment configuration.
+
+### 9.2 Input to AI
 
 - Team composition: N people, from which cities/countries, departure airports
-- Top ranked destinations with their scoring metrics
+- Top 5 ranked destinations with their full scoring metrics
 - Event dates and constraints
 
-Expected structured output:
+### 9.3 Expected Structured Output
 
 ```json
 {
@@ -369,11 +362,15 @@ Expected structured output:
 }
 ```
 
-### 9.3 Itinerary Drafting
+### 9.4 Storage
 
-The first implemented AI capability is a source-backed itinerary drafting flow.
+AI recommendation text is stored in `plan_destinations.ai_summary` for each evaluated destination, with the full structured recommendation available for the top-ranked results.
 
-Inputs to the itinerary agent:
+### 9.5 Source-Backed Itinerary Drafting
+
+In addition to destination recommendation, Travel Sync can support a source-backed itinerary drafting workflow for a selected or shortlisted destination.
+
+Inputs to the itinerary workflow:
 
 - destination
 - start date and end date
@@ -408,11 +405,7 @@ Expected response shape:
 }
 ```
 
-### 9.4 Storage and Delivery
-
-AI recommendation text is stored in `plan_destinations.ai_summary` for each evaluated destination, with the full structured recommendation available for the top-ranked results.
-
-Itinerary drafts are currently returned as structured API payloads and are not yet modeled as persisted records.
+Itinerary drafts are planning aids. They should remain transparent about sourced facts, assumptions, and missing verification details. They are not yet modeled as persisted records in the core data model.
 
 ---
 
@@ -762,16 +755,27 @@ React with TypeScript.
 - Production: `https://api.amadeus.com`
 - Rate limits: test ~10 req/sec, production higher with agreement
 
-### 17.2 AI Agent Stack
+### 17.2 AI Providers and Agent Tooling
+
+#### Recommendation Providers
+
+| Provider | SDK/API | Usage |
+|---|---|---|
+| Anthropic Claude | Messages API | Structured destination recommendation |
+| OpenAI | Chat Completions API | Structured destination recommendation |
+
+Selected via `AI_PROVIDER` env var. Only one recommendation provider is active at a time.
+
+#### Source-Backed Planning Tooling
 
 | Component | SDK/API | Usage |
 |---|---|---|
 | LangChain | Python SDK | orchestration, prompt wiring, structured output |
-| OpenAI | Chat API | itinerary synthesis and recommendation synthesis |
+| OpenAI | Chat API | itinerary synthesis and related planning outputs |
 | Exa | Python SDK | search and source discovery |
 | Firecrawl | Python SDK | webpage retrieval and extraction |
 
-The current implementation is OpenAI-first. Additional model providers would require an explicit integration decision.
+This tooling is used to support source-backed planning workflows and should not override the core product rules defined in this document.
 
 ---
 
@@ -790,8 +794,12 @@ AMADEUS_API_KEY=
 AMADEUS_API_SECRET=
 AMADEUS_BASE_URL=https://test.api.amadeus.com
 
-# AI Agent Layer
+# AI Recommendation Provider
+AI_PROVIDER=claude          # or "openai"
+ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
+
+# Optional source-backed itinerary tooling
 OPENAI_MODEL=gpt-4.1-mini
 EXA_API_KEY=
 FIRECRAWL_API_KEY=
@@ -821,12 +829,12 @@ API_PORT=3001
 - If no destination has flights for all participants, return partial results with clear indication of which participants are missing flights per destination.
 - Search does not fully fail due to a single unfound route.
 
-### 19.3 AI Agent Failures
+### 19.3 AI Recommendation and Itinerary Failures
 
-- If OpenAI is unavailable: recommendation or itinerary generation should fail explicitly without hiding the issue.
-- If Exa or Firecrawl partially fail: return partial itinerary output with `warnings` and keep source coverage transparent.
-- If no sources are retrieved: itinerary drafting may still return a draft, but it must clearly state that manual verification is required.
-- AI recommendation remains optional and does not block the core ranking workflow.
+- If the selected AI recommendation provider is unavailable: ranking still works, and recommendation text is marked as unavailable.
+- AI recommendation is optional and does not block the core ranking workflow.
+- If Exa or Firecrawl partially fail during itinerary drafting: return partial itinerary output with clear `warnings` and transparent source coverage.
+- If no sources are retrieved for itinerary drafting: a draft may still be returned, but it must clearly state that manual verification is required.
 
 ---
 
@@ -834,14 +842,14 @@ API_PORT=3001
 
 | Phase | Scope | Priority |
 |---|---|---|
-| **Phase 1** | Python workspace scaffold, env management, verification tooling | Foundation |
-| **Phase 2** | AI agent package with LangChain, OpenAI, Exa, and Firecrawl | Foundation |
-| **Phase 3** | Thin API boundary for AI itinerary drafting | Foundation |
-| **Phase 4** | Plan CRUD + participant CRUD endpoints | Core |
-| **Phase 5** | Amadeus client (OAuth2, flight search) | Core |
-| **Phase 6** | Search orchestrator, scoring, and ranking algorithm | Core |
-| **Phase 7** | AI destination recommendation over ranked results | Enhancement |
-| **Phase 8** | Persisted summaries and richer planning workflows | Enhancement |
+| **Phase 1** | SQL files, Docker, database setup | Foundation |
+| **Phase 2** | Go project scaffold, config, GORM models, reference data endpoints | Foundation |
+| **Phase 3** | Plan CRUD + Participant CRUD endpoints | Core |
+| **Phase 4** | Amadeus client (OAuth2, flight search) | Core |
+| **Phase 5** | Search orchestrator (concurrent, rate-limited, outbound + return) | Core |
+| **Phase 6** | Destination scoring and ranking algorithm | Core |
+| **Phase 7** | Plan summary endpoint | Core |
+| **Phase 8** | AI recommendation and source-backed itinerary drafting | Enhancement |
 | **Phase 9** | React frontend (wizard, results, summary) | Frontend |
 | **Phase 10** | Authentication (JWT or AWS Cognito) | Polish |
 | **Phase 11** | Hotel search integration | Future |
