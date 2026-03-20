@@ -2,20 +2,27 @@
 
 ## Current Repo State
 
-This repository is now a Python `uv` workspace with the first Travel Sync AI slice implemented.
+This repository is now split across:
+
+- a Python `uv` workspace for `apps/agents`
+- a Go module for `apps/api`
+- SQL and local database assets under `data/`
 
 Current visible workspace structure:
 
 - `AGENTS.md`: repo-wide guidance
 - `BUSINESS_LOGIC_SPEC.md`: source of truth for product and workflow behavior
 - `DESIGN.md`: engineering design and implementation strategy
-- `pyproject.toml`: root workspace and tool configuration
-- `uv.lock`: locked Python dependency graph
+- `PLAN.md`: rewrite plan and phased delivery reference
+- `pyproject.toml`: Python workspace and tooling for `apps/agents`
+- `uv.lock`: locked Python dependency graph for the agent layer
 - `.env.example`: local environment template
-- `apps/agents`: source-backed AI agent package
-- `apps/api`: thin HTTP API package that calls `apps/agents`
-- `apps/web`: reserved for frontend work
-- `apps/tests`: reserved for shared fixtures and future cross-workspace tests
+- `apps/agents`: Python AI agent package
+- `apps/api`: Go backend API application
+- `apps/web`: reserved for the React frontend
+- `apps/tests`: reserved for Playwright and shared end-to-end scenarios
+- `data/sql`: reference and application SQL files
+- `data/docker-compose.yaml`: local MySQL container
 - `scripts/verify_final.sh`: authoritative verification script
 
 If a workspace contains its own `AGENTS.md`, the closest file to the edited path wins.
@@ -69,12 +76,14 @@ Do not run non-read-only commands against shared environments without explicit a
 
 ## Current Workspace Layout
 
-- `apps/agents/src/travel_sync_agents`: agent orchestration, provider clients, prompts, schemas, and services
-- `apps/agents/tests`: unit tests for the agent layer
-- `apps/api/src/travel_sync_api`: request handling and server entrypoint
-- `apps/api/tests`: API boundary tests
-- `apps/web`: reserved for frontend implementation
-- `apps/tests`: reserved for shared scenarios and fixtures
+- `apps/agents/src/travel_sync_agents`: Python agent orchestration, provider clients, prompts, schemas, and services
+- `apps/agents/tests`: Python unit tests for the agent layer
+- `apps/api/cmd/server`: Go API entrypoint
+- `apps/api/internal`: Go config, models, repositories, services, handlers, router, Amadeus, and Python-agent boundary
+- `data/sql`: ordered SQL setup files plus source datasets
+- `data/docker-compose.yaml`: local MySQL startup
+- `apps/web`: reserved for the React frontend
+- `apps/tests`: reserved for Playwright and shared scenarios
 - `scripts`: shared shell automation
 
 ## Engineering Principles
@@ -93,9 +102,9 @@ Use these principles across the repo:
 ## Repo-Wide Conventions
 
 - run shell commands with `zsh -lc`
-- use Python `3.11+` for local development in this repo
-- use `uv` for dependency and workspace management
-- install the workspace with `uv sync --all-packages --python 3.11`
+- use Python `3.11+` for `apps/agents`
+- use a recent Go toolchain for `apps/api`
+- use `uv` for Python dependency and workspace management
 - use the shared root `.env` file for local configuration
 - prefer fast read-only search tools such as `rg`
 - do not invent scripts or verification commands that do not exist in the repo

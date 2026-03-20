@@ -10,30 +10,49 @@ Guiding principles:
 - favor clarity over premature optimization
 - keep interfaces narrow and explicit
 - keep transport, orchestration, and provider integration separated
-- return typed data before presentation-friendly prose
+- let product rules live in business logic docs, not in framework glue
 - degrade gracefully when external services fail
 
 ## Current Architecture
 
-The current implementation is a Python `uv` workspace with two active application packages:
+The repository is now intentionally split by responsibility:
 
-- `apps/agents`: source-backed AI orchestration
-- `apps/api`: thin HTTP API layer
+- `apps/api`: Go backend API and orchestration layer
+- `apps/agents`: Python AI agent layer
+- `data/sql`: schema and seed files
+- `apps/web`: future React frontend
+- `apps/tests`: future Playwright coverage
 
-Current request flow:
+Current high-level flow:
 
 ```text
 client
-  -> apps/api
-  -> CreateItineraryService
-  -> ItineraryAgent
-  -> Exa search
-  -> Firecrawl scrape
-  -> OpenAI structured synthesis
-  -> typed itinerary response with sources, assumptions, and warnings
+  -> apps/web (planned)
+  -> apps/api (Go)
+  -> repository/service layers + Amadeus integration
+  -> Python agent boundary when AI support is needed
+  -> apps/agents
+  -> OpenAI / Exa / Firecrawl
 ```
 
 ## Workspace Strategy
+
+### `apps/api`
+
+Owns:
+
+- HTTP routing
+- configuration loading
+- request validation
+- plan/search orchestration
+- database and external API boundaries
+- integration with the Python agent layer
+
+Does not own:
+
+- prompt construction
+- LangChain orchestration
+- provider-specific citation logic
 
 ### `apps/agents`
 
@@ -49,43 +68,28 @@ Owns:
 Does not own:
 
 - HTTP concerns
-- persistence
+- database persistence
 - frontend presentation logic
-
-### `apps/api`
-
-Owns:
-
-- request parsing
-- route handling
-- status code mapping
-- serialization of typed agent responses
-
-Does not own:
-
-- prompt construction
-- provider SDK calls
-- citation logic
 
 ## Runtime and Tooling
 
-- Python `3.11+`
-- `uv` for workspace management
+- Python `3.11+` for `apps/agents`
+- Go `1.22+` for `apps/api`
+- `uv` for Python workspace management
+- `gofmt` and `go test` for API verification
 - shared root `.env` file for local configuration
-- `ruff` for linting
-- `mypy` for static type checks
-- `pytest` for unit tests
 
-Local setup:
+Local setup today:
 
 ```bash
 uv sync --all-packages --python 3.11
+docker compose -f data/docker-compose.yaml up -d
 ```
 
 API entrypoint:
 
 ```bash
-uv run travelsync-api
+cd apps/api && go run ./cmd/server
 ```
 
 ## Verification
@@ -94,17 +98,23 @@ Use narrow checks while iterating, then run the full repo gate before handoff.
 
 Available checks:
 
-- `uv run ruff check .`
-- `uv run mypy apps/agents/src apps/api/src`
-- `uv run pytest`
+- `uv run ruff check apps/agents`
+- `uv run mypy apps/agents/src`
+- `uv run pytest apps/agents/tests`
+- `cd apps/api && go test ./...`
 - `zsh scripts/verify_final.sh`
 
 ## Near-Term Strategy
 
-The implemented first slice is itinerary generation with researched source retrieval.
+The implemented foundation slice establishes:
 
-Next layers should follow the same pattern:
+- ordered SQL setup files through `012_plan_flights.sql`
+- a compilable Go API scaffold with the target package layout
+- a documented Python agent boundary for later integration
 
-- add flight-research agents behind the same `apps/agents` service boundary
-- add destination recommendation orchestration without leaking provider details into `apps/api`
-- introduce persistence only after the typed service contracts are stable
+Next steps should fill the scaffold in this order:
+
+- wire the Go repositories and services to MySQL
+- implement reference data and plan CRUD endpoints
+- add Amadeus client logic and the search orchestrator
+- connect the Go API to the Python agent layer for recommendation and itinerary workflows

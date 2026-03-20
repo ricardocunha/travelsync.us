@@ -7,4 +7,7 @@ __pycache__/
 .env.local
 *.pyc
 .idea/
-
+node_modules/
+playwright-report/
+test-results/
+coverage.out

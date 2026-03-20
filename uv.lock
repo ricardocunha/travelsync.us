@@ -5,7 +5,6 @@ requires-python = ">=3.11"
 [manifest]
 members = [
     "travel-sync-agents",
-    "travel-sync-api",
     "travelsync-workspace",
 ]
 
@@ -1675,23 +1674,6 @@ requires-dist = [
     { name = "langchain-openai" },
     { name = "pydantic" },
     { name = "python-dotenv" },
-]
-
-[[package]]
-name = "travel-sync-api"
-version = "0.1.0"
-source = { editable = "apps/api" }
-dependencies = [
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "travel-sync-agents" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "travel-sync-agents", editable = "apps/agents" },
 ]
 
 [[package]]

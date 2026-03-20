@@ -13,11 +13,11 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["apps/agents", "apps/api"]
+members = ["apps/agents"]
 
 [tool.pytest.ini_options]
-testpaths = ["apps/agents/tests", "apps/api/tests"]
-pythonpath = ["apps/agents/src", "apps/api/src"]
+testpaths = ["apps/agents/tests"]
+pythonpath = ["apps/agents/src"]
 
 [tool.ruff]
 line-length = 100

@@ -45,20 +45,30 @@ Keep `apps/api` focused on transport, application flow, and backend composition.
 
 ## Expected Layout
 
-When implementation grows, prefer this shape:
+Current scaffold:
 
 ```text
 apps/api/
-  cmd/
+  cmd/server/
   internal/
+    ai/
+    amadeus/
     config/
+    database/
     handler/
+    models/
+    repository/
     router/
     service/
-    ai/
 ```
 
-The exact folders can evolve, but keep transport and orchestration concerns separate.
+Keep transport and orchestration concerns separate as this fills in.
+
+## Local Commands
+
+- `go run ./cmd/server`
+- `go test ./...`
+- `gofmt -w ./cmd ./internal`
 
 ## Error Handling
 

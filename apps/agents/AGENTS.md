@@ -52,7 +52,7 @@ apps/agents/
 The intended flow is:
 
 ```text
-apps/api -> CreateItineraryService -> ItineraryAgent -> Exa/Firecrawl/OpenAI
+apps/api (Go) -> Python agent boundary -> CreateItineraryService -> ItineraryAgent -> Exa/Firecrawl/OpenAI
 ```
 
 `apps/api` should never assemble prompts or call provider SDKs directly.
