@@ -69,16 +69,6 @@ Do not run non-read-only commands against shared environments without explicit a
 
 - `apps/web`: Frontend UI application.
 - `apps/api`: Backend API application.
-- `apps/api/cmd`: Base main definition
-- `apps/api/internal/config`: Configurations for environment
-- `apps/api/internal/database`: GORM for Postgres
-- `apps/api/internal/models`: Database models
-- `apps/api/internal/repository`: Database models
-- `apps/api/internal/service`: Database models
-- `apps/api/internal/amadeus`: Database models
-- `apps/api/internal/ai`: Database models
-- `apps/api/internal/handler`: Database models
-- `apps/api/internal/router`: Configurations for environment
 - `apps/data/sql`: Local for sql files
 - `apps/tests`: Reusable fixtures for tests and scenarios.
 - `apps`: docker-compose files, .env templates

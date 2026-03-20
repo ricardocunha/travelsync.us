@@ -231,3 +231,4 @@ When code is introduced here:
 - prefer small, explicit interfaces over framework magic
 - make source provenance visible in logs and returned payloads
 - update this file whenever the stack, folder layout, or integration contract changes
+
