@@ -11,3 +11,7 @@ node_modules/
 playwright-report/
 test-results/
 coverage.out
+dist/
+apps/tests/output/
+npm-debug.log*
+*.tsbuildinfo

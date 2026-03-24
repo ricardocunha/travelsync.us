@@ -19,21 +19,35 @@ The repository is now intentionally split by responsibility:
 
 - `apps/api`: Go backend API and orchestration layer
 - `apps/agents`: Python AI agent layer
+- `apps/web`: React frontend for planning flows
+- `apps/tests`: Playwright browser coverage
 - `data/sql`: schema and seed files
-- `apps/web`: future React frontend
-- `apps/tests`: future Playwright coverage
 
 Current high-level flow:
 
 ```text
 client
-  -> apps/web (planned)
+  -> apps/web (React)
   -> apps/api (Go)
   -> repository/service layers + Amadeus integration
   -> Python agent boundary when AI support is needed
   -> apps/agents
   -> OpenAI / Exa / Firecrawl
 ```
+
+Current implemented backend slice:
+
+- ordered SQL schema files through plan flights
+- a running Go HTTP server entrypoint
+- MySQL-backed reference data queries
+- plan CRUD
+- participant CRUD
+
+Current implemented frontend slice:
+
+- a Vite React app for landing, plans list, plan creation, and plan detail flows
+- a mock-capable frontend API layer aligned with the current Go endpoints
+- Playwright smoke tests for the first browser journeys
 
 ## Workspace Strategy
 
@@ -76,6 +90,7 @@ Does not own:
 - Python `3.11+` for `apps/agents`
 - Go `1.22+` for `apps/api`
 - `uv` for Python workspace management
+- npm workspaces for the frontend and browser tests
 - `gofmt` and `go test` for API verification
 - shared root `.env` file for local configuration
 
@@ -83,6 +98,7 @@ Local setup today:
 
 ```bash
 uv sync --all-packages --python 3.11
+npm install
 docker compose -f data/docker-compose.yaml up -d
 ```
 
@@ -90,6 +106,12 @@ API entrypoint:
 
 ```bash
 cd apps/api && go run ./cmd/server
+```
+
+Frontend entrypoint:
+
+```bash
+npm run dev:web
 ```
 
 ## Verification
@@ -101,20 +123,25 @@ Available checks:
 - `uv run ruff check apps/agents`
 - `uv run mypy apps/agents/src`
 - `uv run pytest apps/agents/tests`
+- `npm run build:web`
+- `npm run test:web`
+- `npm run test:e2e`
 - `cd apps/api && go test ./...`
 - `zsh scripts/verify_final.sh`
 
 ## Near-Term Strategy
 
-The implemented foundation slice establishes:
+The implemented backend foundation now includes:
 
 - ordered SQL setup files through `012_plan_flights.sql`
-- a compilable Go API scaffold with the target package layout
+- a compilable Go API with the target package layout
+- repository and service wiring to MySQL for reference data, plans, and participants
 - a documented Python agent boundary for later integration
 
-Next steps should fill the scaffold in this order:
+Next steps should extend the backend in this order:
 
-- wire the Go repositories and services to MySQL
-- implement reference data and plan CRUD endpoints
-- add Amadeus client logic and the search orchestrator
+- add Amadeus OAuth, token caching, and flight search client logic
+- build the concurrent outbound and return search orchestrator
+- implement destination scoring and ranking
 - connect the Go API to the Python agent layer for recommendation and itinerary workflows
+- add final summary and destination-selection flows
