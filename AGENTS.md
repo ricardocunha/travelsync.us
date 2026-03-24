@@ -6,6 +6,7 @@ This repository is now split across:
 
 - a Python `uv` workspace for `apps/agents`
 - a Go module for `apps/api`
+- an npm workspace for `apps/web` and `apps/tests`
 - SQL and local database assets under `data/`
 
 Current visible workspace structure:
@@ -15,12 +16,13 @@ Current visible workspace structure:
 - `DESIGN.md`: engineering design and implementation strategy
 - `PLAN.md`: rewrite plan and phased delivery reference
 - `pyproject.toml`: Python workspace and tooling for `apps/agents`
+- `package.json`: npm workspace for `apps/web` and `apps/tests`
 - `uv.lock`: locked Python dependency graph for the agent layer
 - `.env.example`: local environment template
 - `apps/agents`: Python AI agent package
 - `apps/api`: Go backend API application
-- `apps/web`: reserved for the React frontend
-- `apps/tests`: reserved for Playwright and shared end-to-end scenarios
+- `apps/web`: React frontend application
+- `apps/tests`: Playwright browser test workspace
 - `data/sql`: reference and application SQL files
 - `data/docker-compose.yaml`: local MySQL container
 - `scripts/verify_final.sh`: authoritative verification script
@@ -80,10 +82,10 @@ Do not run non-read-only commands against shared environments without explicit a
 - `apps/agents/tests`: Python unit tests for the agent layer
 - `apps/api/cmd/server`: Go API entrypoint
 - `apps/api/internal`: Go config, models, repositories, services, handlers, router, Amadeus, and Python-agent boundary
+- `apps/web/src`: React routes, components, feature modules, and frontend API client
+- `apps/tests/tests`: Playwright smoke flows for the web app
 - `data/sql`: ordered SQL setup files plus source datasets
 - `data/docker-compose.yaml`: local MySQL startup
-- `apps/web`: reserved for the React frontend
-- `apps/tests`: reserved for Playwright and shared scenarios
 - `scripts`: shared shell automation
 
 ## Engineering Principles
@@ -104,6 +106,7 @@ Use these principles across the repo:
 - run shell commands with `zsh -lc`
 - use Python `3.11+` for `apps/agents`
 - use a recent Go toolchain for `apps/api`
+- use Node `18+` with npm workspaces for `apps/web` and `apps/tests`
 - use `uv` for Python dependency and workspace management
 - use the shared root `.env` file for local configuration
 - prefer fast read-only search tools such as `rg`
@@ -127,6 +130,7 @@ Before reporting work as complete:
 
 - run the relevant checks that exist for the affected area
 - run `zsh scripts/verify_final.sh` for final handoff
+- run `npm run test:e2e` when browser coverage is part of the requested slice
 - say clearly if a check could not be run
 - do not claim verification for commands that are only planned
 

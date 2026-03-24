@@ -45,7 +45,7 @@ Keep `apps/api` focused on transport, application flow, and backend composition.
 
 ## Expected Layout
 
-Current scaffold:
+Current layout:
 
 ```text
 apps/api/
@@ -62,7 +62,21 @@ apps/api/
     service/
 ```
 
-Keep transport and orchestration concerns separate as this fills in.
+Implemented backend slice today:
+
+- health route
+- reference data routes for regions, countries, airports, airlines, and destinations
+- plan CRUD routes
+- plan participant CRUD routes
+
+Still pending in later slices:
+
+- Amadeus-backed flight search orchestration
+- destination scoring and ranking
+- AI recommendation and itinerary integration via `apps/agents`
+- final summary and selection workflows
+
+Keep transport and orchestration concerns separate as the remaining slices fill in.
 
 ## Local Commands
 
