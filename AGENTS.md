@@ -12,6 +12,7 @@ This repository is now split across:
 Current visible workspace structure:
 
 - `AGENTS.md`: repo-wide guidance
+- `README.md`: local setup and run guide
 - `BUSINESS_LOGIC_SPEC.md`: source of truth for product and workflow behavior
 - `DESIGN.md`: engineering design and implementation strategy
 - `PLAN.md`: rewrite plan and phased delivery reference
@@ -111,6 +112,7 @@ Use these principles across the repo:
 - use Node `18+` with npm workspaces for `apps/web` and `apps/tests`
 - use `uv` for Python dependency and workspace management
 - use the shared root `.env` file for local configuration
+- keep `WEB_ALLOWED_ORIGINS` aligned with the local frontend origin when running the Go API from a browser
 - prefer fast read-only search tools such as `rg`
 - do not invent scripts or verification commands that do not exist in the repo
 - keep secrets, credentials, and tokens out of version control

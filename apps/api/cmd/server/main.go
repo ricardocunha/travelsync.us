@@ -33,7 +33,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.Server.Addr(),
-		Handler:      router.New(api),
+		Handler:      router.New(api, cfg.Web.AllowedOrigins),
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}

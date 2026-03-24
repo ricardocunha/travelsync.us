@@ -64,7 +64,11 @@ export function NewPlanPage() {
         setCountries(countryItems);
       })
       .catch(() => {
-        setMessage("Reference data could not be loaded. You can still continue in mock mode.");
+        setMessage(
+          `Reference data could not be loaded from the Go API at ${config.apiBaseUrl}. ` +
+            "Check that apps/api is running and that WEB_ALLOWED_ORIGINS includes your Vite origin, " +
+            "or set VITE_ENABLE_MOCK=true for frontend-only mode.",
+        );
       });
   }, []);
 

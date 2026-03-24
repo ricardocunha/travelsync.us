@@ -24,7 +24,11 @@ export function PlansListPage() {
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : "Failed to load plans.");
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : `Failed to load plans from ${config.apiBaseUrl}. Check that the Go API is running.`,
+          );
         }
       })
       .finally(() => {

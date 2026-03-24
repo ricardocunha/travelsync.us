@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type Config struct {
 	Amadeus  AmadeusConfig
 	AI       AIConfig
 	Agents   AgentsConfig
+	Web      WebConfig
 }
 
 type ServerConfig struct {
@@ -54,6 +56,10 @@ type AgentsConfig struct {
 	BaseURL string
 }
 
+type WebConfig struct {
+	AllowedOrigins []string
+}
+
 func Load() Config {
 	return Config{
 		Server: ServerConfig{
@@ -82,6 +88,17 @@ func Load() Config {
 		Agents: AgentsConfig{
 			BaseURL: getEnv("AGENTS_BASE_URL", "http://127.0.0.1:8000"),
 		},
+		Web: WebConfig{
+			AllowedOrigins: getEnvList(
+				"WEB_ALLOWED_ORIGINS",
+				[]string{
+					"http://127.0.0.1:5173",
+					"http://localhost:5173",
+					"http://127.0.0.1:4173",
+					"http://localhost:4173",
+				},
+			),
+		},
 	}
 }
 
@@ -108,4 +125,25 @@ func getEnvInt(key string, fallback int) int {
 
 func getEnvDurationMS(key string, fallbackMS int) time.Duration {
 	return time.Duration(getEnvInt(key, fallbackMS)) * time.Millisecond
+}
+
+func getEnvList(key string, fallback []string) []string {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
+	}
+
+	values := make([]string, 0, len(fallback))
+	for _, item := range strings.Split(raw, ",") {
+		trimmed := strings.TrimSpace(item)
+		if trimmed != "" {
+			values = append(values, trimmed)
+		}
+	}
+
+	if len(values) == 0 {
+		return fallback
+	}
+
+	return values
 }

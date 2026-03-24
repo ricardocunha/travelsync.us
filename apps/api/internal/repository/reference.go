@@ -70,26 +70,7 @@ func (r *MySQLReferenceRepository) ListAirports(
 	countryID int,
 	city string,
 ) ([]models.Airport, error) {
-	query := `
-		SELECT id, name, city, country_id, iata_code, icao_code, latitude, longitude,
-		       altitude, timezone_offset, timezone_code, type
-		FROM airports
-	`
-	clauses := make([]string, 0, 2)
-	args := make([]any, 0, 2)
-
-	if countryID > 0 {
-		clauses = append(clauses, "country_id = ?")
-		args = append(args, countryID)
-	}
-	if city != "" {
-		clauses = append(clauses, "LOWER(city) LIKE ?")
-		args = append(args, "%"+strings.ToLower(city)+"%")
-	}
-	if len(clauses) > 0 {
-		query += " WHERE " + strings.Join(clauses, " AND ")
-	}
-	query += " ORDER BY city, name LIMIT 200"
+	query, args := buildAirportSearchQuery(countryID, city)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -120,6 +101,69 @@ func (r *MySQLReferenceRepository) ListAirports(
 	}
 
 	return items, rows.Err()
+}
+
+func buildAirportSearchQuery(countryID int, searchTerm string) (string, []any) {
+	query := `
+		SELECT DISTINCT
+			a.id,
+			a.name,
+			a.city,
+			a.country_id,
+			a.iata_code,
+			a.icao_code,
+			a.latitude,
+			a.longitude,
+			a.altitude,
+			a.timezone_offset,
+			a.timezone_code,
+			a.type
+		FROM airports a
+		LEFT JOIN locations_airport la
+			ON la.airport_id = a.id
+			AND la.is_active = true
+		LEFT JOIN locations l
+			ON l.id = la.location_id
+			AND l.is_active = true
+	`
+
+	clauses := make([]string, 0, 3)
+	args := make([]any, 0, 5)
+
+	if countryID > 0 {
+		clauses = append(clauses, "a.country_id = ?")
+		args = append(args, countryID)
+	}
+
+	trimmedTerm := strings.TrimSpace(searchTerm)
+	if trimmedTerm != "" {
+		textPattern := "%" + trimmedTerm + "%"
+		iataPattern := strings.ToUpper(trimmedTerm) + "%"
+
+		clauses = append(
+			clauses,
+			`(
+				a.city COLLATE utf8mb4_0900_ai_ci LIKE ?
+				OR a.name COLLATE utf8mb4_0900_ai_ci LIKE ?
+				OR COALESCE(l.name, '') COLLATE utf8mb4_0900_ai_ci LIKE ?
+				OR a.iata_code LIKE ?
+			)`,
+		)
+		args = append(args, textPattern, textPattern, textPattern, iataPattern)
+	}
+
+	if len(clauses) > 0 {
+		query += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	query += `
+		ORDER BY
+			a.city,
+			a.name
+		LIMIT 200
+	`
+
+	return query, args
 }
 
 func (r *MySQLReferenceRepository) ListAirlines(ctx context.Context) ([]models.Airline, error) {

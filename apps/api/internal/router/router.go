@@ -6,7 +6,7 @@ import (
 	"github.com/ricardocunha/travelsync/apps/api/internal/handler"
 )
 
-func New(api *handler.API) http.Handler {
+func New(api *handler.API, allowedOrigins []string) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", handler.Health)
@@ -38,5 +38,5 @@ func New(api *handler.API) http.Handler {
 	mux.HandleFunc("POST /api/v1/plans/{id}/select", handler.SelectDestination)
 	mux.HandleFunc("GET /api/v1/plans/{id}/summary", handler.GetSummary)
 
-	return handler.Recover(handler.Logging(mux))
+	return handler.Recover(handler.Logging(handler.CORS(allowedOrigins, mux)))
 }

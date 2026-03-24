@@ -94,6 +94,7 @@ Does not own:
 - npm workspaces for the frontend and browser tests
 - `gofmt` and `go test` for API verification
 - shared root `.env` file for local configuration
+- local browser access to the Go API is controlled through `WEB_ALLOWED_ORIGINS`
 
 Local setup today:
 

@@ -100,7 +100,7 @@ func (f fakeParticipantService) DeleteParticipant(ctx context.Context, participa
 }
 
 func TestRegionsRouteReturnsJSON(t *testing.T) {
-	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}))
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}), nil)
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/regions", nil)
 	recorder := httptest.NewRecorder()
 
@@ -121,7 +121,7 @@ func TestRegionsRouteReturnsJSON(t *testing.T) {
 }
 
 func TestCreatePlanRouteCreatesPlan(t *testing.T) {
-	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}))
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}), nil)
 
 	body := bytes.NewBufferString(`{
 		"organization_id": 1,
@@ -158,7 +158,7 @@ func TestCreatePlanRouteCreatesPlan(t *testing.T) {
 }
 
 func TestAddParticipantsAcceptsSingleObject(t *testing.T) {
-	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}))
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}), nil)
 
 	body := bytes.NewBufferString(`{
 		"guest_name": "Ana",
@@ -187,7 +187,7 @@ func TestAddParticipantsAcceptsSingleObject(t *testing.T) {
 }
 
 func TestListPlansRequiresOrgID(t *testing.T) {
-	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}))
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}), nil)
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/plans", nil)
 	recorder := httptest.NewRecorder()
 
@@ -195,6 +195,44 @@ func TestListPlansRequiresOrgID(t *testing.T) {
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, recorder.Code)
+	}
+}
+
+func TestCORSAllowsConfiguredLocalOrigin(t *testing.T) {
+	server := New(
+		handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}),
+		[]string{"http://127.0.0.1:5173"},
+	)
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/regions", nil)
+	request.Header.Set("Origin", "http://127.0.0.1:5173")
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Header().Get("Access-Control-Allow-Origin") != "http://127.0.0.1:5173" {
+		t.Fatalf("expected access-control-allow-origin header to echo the allowed origin")
+	}
+}
+
+func TestCORSHandlesPreflightRequest(t *testing.T) {
+	server := New(
+		handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}),
+		[]string{"http://localhost:5173"},
+	)
+
+	request := httptest.NewRequest(http.MethodOptions, "/api/v1/plans", nil)
+	request.Header.Set("Origin", "http://localhost:5173")
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusNoContent {
+		t.Fatalf("expected status %d, got %d", http.StatusNoContent, recorder.Code)
+	}
+
+	if recorder.Header().Get("Access-Control-Allow-Origin") != "http://localhost:5173" {
+		t.Fatalf("expected access-control-allow-origin header to echo the allowed origin")
 	}
 }
 

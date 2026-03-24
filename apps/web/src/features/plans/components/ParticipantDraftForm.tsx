@@ -28,6 +28,7 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
   useEffect(() => {
     if (draft.departure_city.trim().length < 2) {
       setAirports([]);
+      setLoadingAirports(false);
       return;
     }
 
@@ -40,11 +41,20 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
       .then((items) => {
         if (!cancelled) {
           setAirports(items);
+          if (items.length === 0) {
+            setMessage(
+              `No airports found for "${draft.departure_city.trim()}". ` +
+                "Try a nearby city, a destination alias like New York, or set the country first.",
+            );
+          } else {
+            setMessage(null);
+          }
         }
       })
       .catch(() => {
         if (!cancelled) {
           setAirports([]);
+          setMessage("Airport search failed. Check that the Go API is running, then try again.");
         }
       })
       .finally(() => {
@@ -59,6 +69,7 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
   }, [draft.departure_city, draft.departure_country_id]);
 
   function updateDraft<Key extends keyof ParticipantInput>(key: Key, value: ParticipantInput[Key]) {
+    setMessage(null);
     setDraft((current) => ({
       ...current,
       [key]: value,
@@ -160,12 +171,21 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
         </FormField>
 
         <FormField
-          hint={loadingAirports ? "Searching..." : "Type a city to load routes"}
+          hint={
+            loadingAirports
+              ? "Searching..."
+              : draft.departure_city.trim().length < 2
+                ? "Type at least 2 characters"
+                : airports.length === 0
+                  ? "No matches yet"
+                  : `${airports.length} option${airports.length === 1 ? "" : "s"} found`
+          }
           label="Departure airport"
         >
           <div className="field-shell rounded-2xl px-4 py-3">
             <select
               className="w-full bg-transparent outline-none"
+              disabled={loadingAirports || draft.departure_city.trim().length < 2}
               onChange={(event) => updateDraft("departure_airport_id", Number(event.target.value))}
               value={draft.departure_airport_id || ""}
             >
