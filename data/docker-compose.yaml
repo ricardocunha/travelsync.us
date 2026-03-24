@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   mysql:
     image: mysql:8.4
@@ -11,8 +9,8 @@ services:
     ports:
       - "3336:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./sql:/docker-entrypoint-initdb.d
+      - mysql_data_travelsync:/var/lib/mysql
+      - ./sql/init:/docker-entrypoint-initdb.d:ro
 
 volumes:
-  mysql_data:
+  mysql_data_travelsync:

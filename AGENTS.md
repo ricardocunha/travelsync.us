@@ -23,7 +23,8 @@ Current visible workspace structure:
 - `apps/api`: Go backend API application
 - `apps/web`: React frontend application
 - `apps/tests`: Playwright browser test workspace
-- `data/sql`: reference and application SQL files
+- `data/sql/init`: canonical ordered SQL files for local database bootstrapping
+- `data/sql/legacy`: archived legacy SQL files kept out of Docker init
 - `data/docker-compose.yaml`: local MySQL container
 - `scripts/verify_final.sh`: authoritative verification script
 
@@ -84,7 +85,8 @@ Do not run non-read-only commands against shared environments without explicit a
 - `apps/api/internal`: Go config, models, repositories, services, handlers, router, Amadeus, and Python-agent boundary
 - `apps/web/src`: React routes, components, feature modules, and frontend API client
 - `apps/tests/tests`: Playwright smoke flows for the web app
-- `data/sql`: ordered SQL setup files plus source datasets
+- `data/sql/init`: ordered SQL setup files used by local MySQL initialization
+- `data/sql/legacy`: old overlapping SQL files retained for reference only
 - `data/docker-compose.yaml`: local MySQL startup
 - `scripts`: shared shell automation
 

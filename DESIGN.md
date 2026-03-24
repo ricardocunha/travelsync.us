@@ -21,7 +21,8 @@ The repository is now intentionally split by responsibility:
 - `apps/agents`: Python AI agent layer
 - `apps/web`: React frontend for planning flows
 - `apps/tests`: Playwright browser coverage
-- `data/sql`: schema and seed files
+- `data/sql/init`: schema and seed files used for local MySQL initialization
+- `data/sql/legacy`: archived legacy SQL kept outside the init path
 
 Current high-level flow:
 
@@ -133,7 +134,7 @@ Available checks:
 
 The implemented backend foundation now includes:
 
-- ordered SQL setup files through `012_plan_flights.sql`
+- ordered SQL setup files through `data/sql/init/012_plan_flights.sql`
 - a compilable Go API with the target package layout
 - repository and service wiring to MySQL for reference data, plans, and participants
 - a documented Python agent boundary for later integration
