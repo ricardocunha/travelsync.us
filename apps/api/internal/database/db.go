@@ -1,13 +1,32 @@
 package database
 
-import "github.com/ricardocunha/travelsync/apps/api/internal/config"
+import (
+	"context"
+	"database/sql"
+	"time"
 
-// Connection captures the minimum database configuration needed by the API
-// foundation slice. GORM wiring will replace this in a later implementation pass.
-type Connection struct {
-	DSN string
-}
+	_ "github.com/go-sql-driver/mysql"
 
-func Open(cfg config.Config) *Connection {
-	return &Connection{DSN: cfg.Database.DSN()}
+	"github.com/ricardocunha/travelsync/apps/api/internal/config"
+)
+
+func Open(cfg config.Config) (*sql.DB, error) {
+	db, err := sql.Open("mysql", cfg.Database.DSN())
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetMaxIdleConns(5)
+	db.SetMaxOpenConns(10)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
+	return db, nil
 }
