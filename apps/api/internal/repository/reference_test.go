@@ -12,7 +12,7 @@ func TestBuildAirportSearchQueryIncludesLocationAliasMatching(t *testing.T) {
 		t.Fatalf("expected airport search query to join locations_airport")
 	}
 
-	if !strings.Contains(query, "COALESCE(l.name, '') COLLATE utf8mb4_0900_ai_ci LIKE ?") {
+	if !strings.Contains(query, "COALESCE(l.name, '')") {
 		t.Fatalf("expected airport search query to match related location names")
 	}
 
@@ -20,7 +20,7 @@ func TestBuildAirportSearchQueryIncludesLocationAliasMatching(t *testing.T) {
 		t.Fatalf("expected 4 args for text search, got %d", len(args))
 	}
 
-	if args[0] != "%New York%" || args[3] != "NEW YORK%" {
+	if args[0] != "%new york%" || args[3] != "NEW YORK%" {
 		t.Fatalf("unexpected args: %#v", args)
 	}
 }
@@ -38,5 +38,13 @@ func TestBuildAirportSearchQueryIncludesCountryFilter(t *testing.T) {
 
 	if args[0] != 3 {
 		t.Fatalf("expected first arg to be the country id, got %#v", args[0])
+	}
+}
+
+func TestNormalizeSearchTextRemovesAccents(t *testing.T) {
+	value := normalizeSearchText("São Paulo")
+
+	if value != "sao paulo" {
+		t.Fatalf("expected accent-insensitive normalized text, got %q", value)
 	}
 }
