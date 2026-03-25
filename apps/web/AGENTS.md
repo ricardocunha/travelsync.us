@@ -9,6 +9,8 @@ Current responsibilities:
 - landing and product framing
 - plan list and plan detail screens
 - create-plan wizard
+- launching destination search from the plan detail page
+- showing ranked destination cards and route detail
 - typed HTTP access to the Go API
 - mock-mode support for local frontend and Playwright flows
 
@@ -35,7 +37,7 @@ This workspace should not own:
 - `/plans/new`
 - `/plans/:planId`
 
-Result-ranking, recommendation, and summary screens are still future slices and should remain clearly marked when referenced in the UI.
+Recommendation, destination selection, and summary are still future slices and should remain clearly marked when referenced in the UI.
 
 ## Local Rules
 

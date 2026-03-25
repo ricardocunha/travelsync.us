@@ -114,6 +114,7 @@ Use these principles across the repo:
 - use the shared root `.env` file for local configuration
 - keep `WEB_ALLOWED_ORIGINS` aligned with the local frontend origin when running the Go API from a browser
 - prefer fast read-only search tools such as `rg`
+- prefer the root `npm run dev` entrypoint for local API + web development when validating browser flows
 - do not invent scripts or verification commands that do not exist in the repo
 - keep secrets, credentials, and tokens out of version control
 - keep provider SDK usage inside `apps/agents`; `apps/api` should stay transport-focused

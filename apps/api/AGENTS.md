@@ -68,11 +68,13 @@ Implemented backend slice today:
 - reference data routes for regions, countries, airports, airlines, and destinations
 - plan CRUD routes
 - plan participant CRUD routes
+- search kickoff and status routes
+- ranked destination result routes
+- deterministic local search estimation, scoring, and result persistence
 
 Still pending in later slices:
 
-- Amadeus-backed flight search orchestration
-- destination scoring and ranking
+- live Amadeus-backed flight search orchestration
 - AI recommendation and itinerary integration via `apps/agents`
 - final summary and selection workflows
 
