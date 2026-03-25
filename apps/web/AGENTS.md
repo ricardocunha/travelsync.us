@@ -11,6 +11,7 @@ Current responsibilities:
 - create-plan wizard
 - launching destination search from the plan detail page
 - showing ranked destination cards and route detail
+- side-by-side destination comparison for 2 to 3 selected destinations
 - typed HTTP access to the Go API
 - mock-mode support for local frontend and Playwright flows
 

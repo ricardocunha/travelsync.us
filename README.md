@@ -24,7 +24,7 @@ Implemented today:
   - create-plan wizard
   - plan detail and participant management
   - running destination search from the plan detail page
-  - ranked destination cards and route detail on the plan detail page
+  - ranked destination cards, route detail, and side-by-side destination comparison on the plan detail page
 - Playwright smoke tests for the first frontend slice
 
 Still scaffolded or pending:

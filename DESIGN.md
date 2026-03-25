@@ -52,7 +52,7 @@ Current implemented frontend slice:
 
 - a Vite React app for landing, plans list, plan creation, and plan detail flows
 - a mock-capable frontend API layer aligned with the current Go endpoints
-- plan detail controls for running search and inspecting ranked destinations
+- plan detail controls for running search, inspecting ranked destinations, and side-by-side comparison mode
 - Playwright smoke tests for the first browser journeys
 
 ## Workspace Strategy

@@ -55,4 +55,16 @@ test.describe("travel sync frontend slice", () => {
     await expect(page.getByRole("heading", { name: "Panama City" }).first()).toBeVisible();
     await expect(page.getByText("Selected destination detail")).toBeVisible();
   });
+
+  test("compares destinations side-by-side", async ({ page }) => {
+    await page.goto("/plans/1");
+
+    await page.getByRole("button", { name: "Run destination search" }).click();
+    await page.getByRole("button", { name: "Compare Panama City" }).click();
+    await page.getByRole("button", { name: "Compare Madrid" }).click();
+
+    await expect(page.getByText("Comparison picks 2/3")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Side-by-side destination board" })).toBeVisible();
+    await expect(page.getByText("Best cost:")).toBeVisible();
+  });
 });

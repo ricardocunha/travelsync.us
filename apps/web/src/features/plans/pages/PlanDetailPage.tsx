@@ -44,6 +44,11 @@ export function PlanDetailPage() {
   const [destinationResults, setDestinationResults] = useState<PlanDestinationResult[]>([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState<number | null>(null);
   const [destinationDetail, setDestinationDetail] = useState<PlanDestinationDetail | null>(null);
+  const [compareDestinationIds, setCompareDestinationIds] = useState<number[]>([]);
+  const [compareDetailsByDestinationId, setCompareDetailsByDestinationId] = useState<
+    Record<number, PlanDestinationDetail>
+  >({});
+  const [loadingComparisonDetails, setLoadingComparisonDetails] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -131,6 +136,75 @@ export function PlanDetailPage() {
     }
   }
 
+  useEffect(() => {
+    if (!plan || compareDestinationIds.length === 0) {
+      return;
+    }
+
+    const missingDestinationIDs = compareDestinationIds.filter(
+      (destinationID) => !compareDetailsByDestinationId[destinationID],
+    );
+
+    if (missingDestinationIDs.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingComparisonDetails(true);
+
+    void Promise.all(
+      missingDestinationIDs.map(async (destinationID) => {
+        const detail = await getPlanDestinationDetail(plan.id, destinationID);
+        return [destinationID, detail] as const;
+      }),
+    )
+      .then((entries) => {
+        if (cancelled) {
+          return;
+        }
+        setCompareDetailsByDestinationId((current) => {
+          const next = { ...current };
+          for (const [destinationID, detail] of entries) {
+            next[destinationID] = detail;
+          }
+          return next;
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMessage("Some comparison details could not be loaded.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingComparisonDetails(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [compareDestinationIds, compareDetailsByDestinationId, plan]);
+
+  function toggleCompareDestination(destinationID: number) {
+    setCompareDestinationIds((current) => {
+      if (current.includes(destinationID)) {
+        return current.filter((item) => item !== destinationID);
+      }
+
+      if (current.length >= 3) {
+        setMessage("You can compare up to 3 destinations at a time.");
+        return current;
+      }
+
+      return [...current, destinationID];
+    });
+  }
+
+  function clearComparison() {
+    setCompareDestinationIds([]);
+  }
+
   async function handleSaveBasics() {
     if (!plan) {
       return;
@@ -205,6 +279,8 @@ export function PlanDetailPage() {
 
       setSearchStatus(status);
       setDestinationResults(results);
+      setCompareDestinationIds([]);
+      setCompareDetailsByDestinationId({});
       setPlan((current) => (current ? { ...current, status: status.status } : current));
 
       if (results.length > 0) {
@@ -248,6 +324,60 @@ export function PlanDetailPage() {
 
   const selectedDestinationName =
     destinationResults.find((item) => item.destination.id === selectedDestinationId)?.destination.name ?? null;
+
+  const comparedResults = compareDestinationIds
+    .map((destinationID) => destinationResults.find((item) => item.destination.id === destinationID))
+    .filter((result): result is PlanDestinationResult => Boolean(result));
+
+  const bestByCost = comparedResults.reduce<number | null>((winnerID, current) => {
+    if (!winnerID) {
+      return current.destination.id;
+    }
+    const winner = comparedResults.find((item) => item.destination.id === winnerID);
+    if (!winner) {
+      return current.destination.id;
+    }
+    return current.result.total_cost < winner.result.total_cost ? current.destination.id : winnerID;
+  }, null);
+
+  const bestByTime = comparedResults.reduce<number | null>((winnerID, current) => {
+    if (!winnerID) {
+      return current.destination.id;
+    }
+    const winner = comparedResults.find((item) => item.destination.id === winnerID);
+    if (!winner) {
+      return current.destination.id;
+    }
+    return current.result.total_flight_hours < winner.result.total_flight_hours
+      ? current.destination.id
+      : winnerID;
+  }, null);
+
+  const bestByArrivalSpread = comparedResults.reduce<number | null>((winnerID, current) => {
+    if (!winnerID) {
+      return current.destination.id;
+    }
+    const winner = comparedResults.find((item) => item.destination.id === winnerID);
+    if (!winner) {
+      return current.destination.id;
+    }
+    return current.result.arrival_spread_hours < winner.result.arrival_spread_hours
+      ? current.destination.id
+      : winnerID;
+  }, null);
+
+  const bestByMaxBurden = comparedResults.reduce<number | null>((winnerID, current) => {
+    if (!winnerID) {
+      return current.destination.id;
+    }
+    const winner = comparedResults.find((item) => item.destination.id === winnerID);
+    if (!winner) {
+      return current.destination.id;
+    }
+    return current.result.max_flight_hours < winner.result.max_flight_hours
+      ? current.destination.id
+      : winnerID;
+  }, null);
 
   return (
     <div className="space-y-6">
@@ -474,7 +604,7 @@ export function PlanDetailPage() {
             onClick={() => void handleRunSearch()}
             type="button"
           >
-            {runningSearch ? "Running..." : "Run search"}
+            {runningSearch ? "Running..." : "Run destination search"}
           </button>
         </div>
 
@@ -504,131 +634,268 @@ export function PlanDetailPage() {
             No scored destinations yet. Add participants, refine constraints, and run the search when ready.
           </div>
         ) : (
-          <div className="mt-8 grid gap-6 xl:grid-cols-[1fr_1fr]">
-            {/* Ranked destinations */}
-            <div className="space-y-3">
-              {destinationResults.map((item) => {
-                const isSelected = item.destination.id === selectedDestinationId;
-                const regionName = regions.find((region) => region.id === item.destination.region_id)?.name ?? "Curated region";
-
-                return (
-                  <button
-                    className={`w-full rounded-xl border p-5 text-left transition ${
-                      isSelected
-                        ? "border-[var(--accent)] bg-[var(--accent-muted)]"
-                        : "border-[var(--border-default)] bg-[var(--bg-overlay)] hover:border-[var(--border-strong)]"
-                    }`}
-                    key={item.destination.id}
-                    onClick={() => void loadDestinationDetail(item.destination.id)}
-                    type="button"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className={`label-mono text-[0.6rem] ${isSelected ? "text-[color:var(--accent-hover)]" : ""}`}>
-                          Rank #{item.result.overall_rank}
-                        </div>
-                        <h3 className="heading-section mt-2 text-2xl">{item.destination.name}</h3>
-                        <p className="mt-1 text-xs text-[color:var(--text-tertiary)]">{regionName}</p>
-                      </div>
-                      <span className="pill border border-[var(--border-default)] bg-[var(--bg-surface)] text-[color:var(--text-secondary)]">
-                        balance #{item.result.rank_by_balance}
-                      </span>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <div className={`rounded-lg px-3 py-2.5 ${isSelected ? "bg-[rgba(99,102,241,0.08)]" : "bg-[var(--bg-surface)]"}`}>
-                        <div className="label-mono text-[0.58rem]">Total cost</div>
-                        <div className="mt-1 text-sm font-semibold">
-                          {formatCurrency(item.result.total_cost, plan.currency)}
-                        </div>
-                      </div>
-                      <div className={`rounded-lg px-3 py-2.5 ${isSelected ? "bg-[rgba(99,102,241,0.08)]" : "bg-[var(--bg-surface)]"}`}>
-                        <div className="label-mono text-[0.58rem]">Avg hours</div>
-                        <div className="mt-1 text-sm font-semibold">{formatHours(item.result.avg_flight_hours)}</div>
-                      </div>
-                      <div className={`rounded-lg px-3 py-2.5 ${isSelected ? "bg-[rgba(99,102,241,0.08)]" : "bg-[var(--bg-surface)]"}`}>
-                        <div className="label-mono text-[0.58rem]">Arrival spread</div>
-                        <div className="mt-1 text-sm font-semibold">{formatHours(item.result.arrival_spread_hours)}</div>
-                      </div>
-                      <div className={`rounded-lg px-3 py-2.5 ${isSelected ? "bg-[rgba(99,102,241,0.08)]" : "bg-[var(--bg-surface)]"}`}>
-                        <div className="label-mono text-[0.58rem]">Max burden</div>
-                        <div className="mt-1 text-sm font-semibold">{formatHours(item.result.max_flight_hours)}</div>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Detail panel */}
-            <div className="card-raised p-5">
-              <p className="label-mono text-[color:var(--accent)]">Route detail</p>
-              <h3 className="heading-section mt-2 text-2xl">
-                {selectedDestinationName ?? "Select a destination"}
-              </h3>
-              {destinationDetail ? (
-                <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
-                  {formatCurrency(destinationDetail.result.result.total_cost, plan.currency)} total ·{" "}
-                  {formatHours(destinationDetail.result.result.total_flight_hours)} total hours
-                </p>
+          <div className="mt-8 space-y-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="pill border border-[var(--border-default)] bg-[var(--bg-surface)] text-[color:var(--text-secondary)]">
+                Comparison picks {compareDestinationIds.length}/3
+              </span>
+              {compareDestinationIds.length > 0 ? (
+                <button
+                  className="btn-secondary px-3 py-1.5 text-xs"
+                  onClick={clearComparison}
+                  type="button"
+                >
+                  Clear comparison
+                </button>
               ) : null}
+            </div>
 
-              {loadingDetail ? (
-                <p className="mt-6 text-sm text-[color:var(--text-secondary)]">Loading routes...</p>
-              ) : destinationDetail ? (
-                <div className="mt-5 space-y-3">
-                  {destinationDetail.flights.map((item) => (
+            <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+              {/* Ranked destinations */}
+              <div className="space-y-3">
+                {destinationResults.map((item) => {
+                  const isSelected = item.destination.id === selectedDestinationId;
+                  const isCompared = compareDestinationIds.includes(item.destination.id);
+                  const regionName = regions.find((region) => region.id === item.destination.region_id)?.name ?? "Curated region";
+
+                  return (
                     <div
-                      className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-overlay)] p-4"
-                      key={item.flight.id}
+                      className={`w-full rounded-xl border p-5 transition ${
+                        isSelected
+                          ? "border-[var(--accent)] bg-[var(--accent-muted)]"
+                          : "border-[var(--border-default)] bg-[var(--bg-overlay)]"
+                      }`}
+                      key={item.destination.id}
                     >
-                      <div className="flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="text-sm font-semibold">{item.display_name}</div>
-                          <div className="mt-0.5 text-xs text-[color:var(--text-tertiary)]">
-                            {item.departure_tag} · {item.flight.direction}
+                          <div className={`label-mono text-[0.6rem] ${isSelected ? "text-[color:var(--accent-hover)]" : ""}`}>
+                            Rank #{item.result.overall_rank}
+                          </div>
+                          <h3 className="heading-section mt-2 text-2xl">{item.destination.name}</h3>
+                          <p className="mt-1 text-xs text-[color:var(--text-tertiary)]">{regionName}</p>
+                        </div>
+                        <span className="pill border border-[var(--border-default)] bg-[var(--bg-surface)] text-[color:var(--text-secondary)]">
+                          balance #{item.result.rank_by_balance}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className={`rounded-lg px-3 py-2.5 ${isSelected ? "bg-[rgba(99,102,241,0.08)]" : "bg-[var(--bg-surface)]"}`}>
+                          <div className="label-mono text-[0.58rem]">Total cost</div>
+                          <div className="mt-1 text-sm font-semibold">
+                            {formatCurrency(item.result.total_cost, plan.currency)}
                           </div>
                         </div>
-                        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                          <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
-                            <div className="label-mono text-[0.56rem]">Route</div>
-                            <div className="mt-1 text-xs font-semibold">
-                              {item.flight.origin_airport} → {item.flight.dest_airport}
+                        <div className={`rounded-lg px-3 py-2.5 ${isSelected ? "bg-[rgba(99,102,241,0.08)]" : "bg-[var(--bg-surface)]"}`}>
+                          <div className="label-mono text-[0.58rem]">Avg hours</div>
+                          <div className="mt-1 text-sm font-semibold">{formatHours(item.result.avg_flight_hours)}</div>
+                        </div>
+                        <div className={`rounded-lg px-3 py-2.5 ${isSelected ? "bg-[rgba(99,102,241,0.08)]" : "bg-[var(--bg-surface)]"}`}>
+                          <div className="label-mono text-[0.58rem]">Arrival spread</div>
+                          <div className="mt-1 text-sm font-semibold">{formatHours(item.result.arrival_spread_hours)}</div>
+                        </div>
+                        <div className={`rounded-lg px-3 py-2.5 ${isSelected ? "bg-[rgba(99,102,241,0.08)]" : "bg-[var(--bg-surface)]"}`}>
+                          <div className="label-mono text-[0.58rem]">Max burden</div>
+                          <div className="mt-1 text-sm font-semibold">{formatHours(item.result.max_flight_hours)}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <button
+                          className="btn-secondary px-3 py-1.5 text-xs"
+                          onClick={() => void loadDestinationDetail(item.destination.id)}
+                          type="button"
+                        >
+                          {isSelected ? "Viewing route detail" : "View route detail"}
+                        </button>
+                        <button
+                          aria-pressed={isCompared}
+                          className={`btn-secondary px-3 py-1.5 text-xs ${
+                            isCompared ? "border-[var(--accent)] text-[color:var(--text-primary)]" : ""
+                          }`}
+                          onClick={() => toggleCompareDestination(item.destination.id)}
+                          type="button"
+                        >
+                          {isCompared ? `Remove ${item.destination.name}` : `Compare ${item.destination.name}`}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Detail panel */}
+              <div className="card-raised p-5">
+                <p className="label-mono text-[color:var(--accent)]">Selected destination detail</p>
+                <h3 className="heading-section mt-2 text-2xl">
+                  {selectedDestinationName ?? "Select a destination"}
+                </h3>
+                {destinationDetail ? (
+                  <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
+                    {formatCurrency(destinationDetail.result.result.total_cost, plan.currency)} total ·{" "}
+                    {formatHours(destinationDetail.result.result.total_flight_hours)} total hours
+                  </p>
+                ) : null}
+
+                {loadingDetail ? (
+                  <p className="mt-6 text-sm text-[color:var(--text-secondary)]">Loading routes...</p>
+                ) : destinationDetail ? (
+                  <div className="mt-5 space-y-3">
+                    {destinationDetail.flights.map((item) => (
+                      <div
+                        className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-overlay)] p-4"
+                        key={item.flight.id}
+                      >
+                        <div className="flex flex-col gap-3">
+                          <div>
+                            <div className="text-sm font-semibold">{item.display_name}</div>
+                            <div className="mt-0.5 text-xs text-[color:var(--text-tertiary)]">
+                              {item.departure_tag} · {item.flight.direction}
                             </div>
-                            <div className="text-[0.65rem] text-[color:var(--text-tertiary)]">{item.flight.main_carrier}</div>
                           </div>
-                          <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
-                            <div className="label-mono text-[0.56rem]">Departs</div>
-                            <div className="mt-1 text-xs font-semibold">
-                              {formatDateTime(item.flight.departure_time, plan.event_timezone)}
+                          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                            <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
+                              <div className="label-mono text-[0.56rem]">Route</div>
+                              <div className="mt-1 text-xs font-semibold">
+                                {item.flight.origin_airport} → {item.flight.dest_airport}
+                              </div>
+                              <div className="text-[0.65rem] text-[color:var(--text-tertiary)]">{item.flight.main_carrier}</div>
                             </div>
-                          </div>
-                          <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
-                            <div className="label-mono text-[0.56rem]">Arrives</div>
-                            <div className="mt-1 text-xs font-semibold">
-                              {formatDateTime(item.flight.arrival_time, plan.event_timezone)}
+                            <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
+                              <div className="label-mono text-[0.56rem]">Departs</div>
+                              <div className="mt-1 text-xs font-semibold">
+                                {formatDateTime(item.flight.departure_time, plan.event_timezone)}
+                              </div>
                             </div>
-                          </div>
-                          <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
-                            <div className="label-mono text-[0.56rem]">Cost</div>
-                            <div className="mt-1 text-xs font-semibold">
-                              {formatCurrency(item.flight.price, item.flight.currency)} · {item.flight.stops} stops
+                            <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
+                              <div className="label-mono text-[0.56rem]">Arrives</div>
+                              <div className="mt-1 text-xs font-semibold">
+                                {formatDateTime(item.flight.arrival_time, plan.event_timezone)}
+                              </div>
                             </div>
-                            <div className="text-[0.65rem] text-[color:var(--text-tertiary)]">
-                              {formatHours(item.flight.duration_minutes / 60)}
+                            <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
+                              <div className="label-mono text-[0.56rem]">Cost</div>
+                              <div className="mt-1 text-xs font-semibold">
+                                {formatCurrency(item.flight.price, item.flight.currency)} · {item.flight.stops} stops
+                              </div>
+                              <div className="text-[0.65rem] text-[color:var(--text-tertiary)]">
+                                {formatHours(item.flight.duration_minutes / 60)}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-6 text-sm text-[color:var(--text-secondary)]">
-                  Pick a ranked destination to inspect the flight set per traveler.
-                </p>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-6 text-sm text-[color:var(--text-secondary)]">
+                    Pick a ranked destination to inspect the flight set per traveler.
+                  </p>
+                )}
+              </div>
             </div>
+
+            {comparedResults.length >= 2 ? (
+              <div className="card-raised p-5">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="label-mono text-[color:var(--accent)]">Comparison mode</p>
+                    <h3 className="heading-section mt-2 text-2xl">Side-by-side destination board</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="pill border border-[var(--border-default)] bg-[var(--bg-surface)] text-[color:var(--text-secondary)]">
+                      Best cost: {comparedResults.find((item) => item.destination.id === bestByCost)?.destination.name ?? "n/a"}
+                    </span>
+                    <span className="pill border border-[var(--border-default)] bg-[var(--bg-surface)] text-[color:var(--text-secondary)]">
+                      Best time: {comparedResults.find((item) => item.destination.id === bestByTime)?.destination.name ?? "n/a"}
+                    </span>
+                    <span className="pill border border-[var(--border-default)] bg-[var(--bg-surface)] text-[color:var(--text-secondary)]">
+                      Best sync: {comparedResults.find((item) => item.destination.id === bestByArrivalSpread)?.destination.name ?? "n/a"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className={`mt-5 grid gap-4 ${comparedResults.length === 2 ? "lg:grid-cols-2" : "xl:grid-cols-3"}`}>
+                  {comparedResults.map((item) => {
+                    const detail = compareDetailsByDestinationId[item.destination.id];
+                    const flightCount = detail?.flights.length ?? 0;
+                    const averageStops =
+                      detail && detail.flights.length > 0
+                        ? detail.flights.reduce((total, flightItem) => total + flightItem.flight.stops, 0) /
+                          detail.flights.length
+                        : null;
+
+                    return (
+                      <article
+                        className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-overlay)] p-4"
+                        key={`comparison-${item.destination.id}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="label-mono text-[0.58rem]">Rank #{item.result.overall_rank}</div>
+                            <h4 className="heading-section mt-1.5 text-xl">{item.destination.name}</h4>
+                          </div>
+                          <span className="pill border border-[var(--border-default)] bg-[var(--bg-surface)] text-[color:var(--text-secondary)]">
+                            balance #{item.result.rank_by_balance}
+                          </span>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
+                            <div className="label-mono text-[0.56rem]">Total cost</div>
+                            <div className="mt-1 text-xs font-semibold">{formatCurrency(item.result.total_cost, plan.currency)}</div>
+                          </div>
+                          <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
+                            <div className="label-mono text-[0.56rem]">Total hours</div>
+                            <div className="mt-1 text-xs font-semibold">{formatHours(item.result.total_flight_hours)}</div>
+                          </div>
+                          <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
+                            <div className="label-mono text-[0.56rem]">Arrival spread</div>
+                            <div className="mt-1 text-xs font-semibold">{formatHours(item.result.arrival_spread_hours)}</div>
+                          </div>
+                          <div className="rounded-md bg-[var(--bg-surface)] px-3 py-2">
+                            <div className="label-mono text-[0.56rem]">Max burden</div>
+                            <div className="mt-1 text-xs font-semibold">{formatHours(item.result.max_flight_hours)}</div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 text-xs text-[color:var(--text-tertiary)]">
+                          {loadingComparisonDetails && !detail
+                            ? "Loading route stats..."
+                            : detail
+                              ? `${flightCount} sampled routes · avg ${averageStops?.toFixed(1) ?? "0.0"} stops`
+                              : "Route stats unavailable"}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {bestByCost === item.destination.id ? (
+                            <span className="pill border border-[var(--emerald)] bg-[var(--emerald-muted)] text-[color:var(--text-primary)]">
+                              Lowest cost
+                            </span>
+                          ) : null}
+                          {bestByTime === item.destination.id ? (
+                            <span className="pill border border-[var(--cyan)] bg-[var(--cyan-muted)] text-[color:var(--text-primary)]">
+                              Lowest time
+                            </span>
+                          ) : null}
+                          {bestByArrivalSpread === item.destination.id ? (
+                            <span className="pill border border-[var(--amber)] bg-[var(--amber-muted)] text-[color:var(--text-primary)]">
+                              Tightest arrival spread
+                            </span>
+                          ) : null}
+                          {bestByMaxBurden === item.destination.id ? (
+                            <span className="pill border border-[var(--accent)] bg-[var(--accent-muted)] text-[color:var(--text-primary)]">
+                              Lightest max burden
+                            </span>
+                          ) : null}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </SectionCard>
