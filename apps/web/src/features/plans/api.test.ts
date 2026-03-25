@@ -1,6 +1,14 @@
 import { vi } from "vitest";
 
-import { addParticipants, createPlan, listParticipants, listPlans, resetMockState } from "@/lib/api";
+import {
+  addParticipants,
+  createPlan,
+  listParticipants,
+  listPlanDestinationResults,
+  listPlans,
+  resetMockState,
+  startPlanSearch,
+} from "@/lib/api";
 
 describe("mock plan api", () => {
   beforeEach(() => {
@@ -52,5 +60,15 @@ describe("mock plan api", () => {
 
     expect(createdParticipants).toHaveLength(1);
     expect(participants.some((participant) => participant.guest_name === "Maria")).toBe(true);
+  });
+
+  it("builds ranked destination results in mock mode", async () => {
+    const status = await startPlanSearch(1);
+    const results = await listPlanDestinationResults(1);
+
+    expect(status.status).toBe("reviewed");
+    expect(status.destinations).toBeGreaterThan(0);
+    expect(results[0]?.result.overall_rank).toBe(1);
+    expect(results[0]?.destination.name).toBeTruthy();
   });
 });

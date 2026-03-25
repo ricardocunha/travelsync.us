@@ -1,10 +1,23 @@
 import { config } from "@/lib/config";
 import type { Airport, Country, Destination, Region } from "@/features/reference/types";
-import type { ParticipantInput, Plan, PlanInput, PlanParticipant } from "@/features/plans/types";
+import type {
+  DestinationFlightDetail,
+  ParticipantInput,
+  Plan,
+  PlanDestinationDetail,
+  PlanDestinationMetrics,
+  PlanDestinationResult,
+  PlanInput,
+  PlanParticipant,
+  PlanSearchStatus,
+} from "@/features/plans/types";
 
 type MockState = {
   plans: Plan[];
   participants: PlanParticipant[];
+  searchStatuses: Record<number, PlanSearchStatus>;
+  destinationResults: Record<number, PlanDestinationResult[]>;
+  destinationDetails: Record<string, PlanDestinationDetail>;
   planCounter: number;
   participantCounter: number;
 };
@@ -102,6 +115,9 @@ function buildInitialMockState(): MockState {
         added_at: "2026-03-01T15:30:00.000Z",
       },
     ],
+    searchStatuses: {},
+    destinationResults: {},
+    destinationDetails: {},
     planCounter: 2,
     participantCounter: 3,
   };
@@ -178,6 +194,246 @@ function normalizeParticipant(raw: Record<string, unknown>): PlanParticipant {
     status: String(raw.status ?? "pending"),
     added_at: String(raw.added_at ?? new Date().toISOString()),
   };
+}
+
+function normalizeSearchStatus(raw: Record<string, unknown>): PlanSearchStatus {
+  return {
+    plan_id: Number(raw.plan_id ?? 0),
+    status: String(raw.status ?? "draft"),
+    started_at: raw.started_at ? String(raw.started_at) : undefined,
+    completed_at: raw.completed_at ? String(raw.completed_at) : undefined,
+    destinations: Number(raw.destinations ?? 0),
+    participants: Number(raw.participants ?? 0),
+  };
+}
+
+function normalizeDestinationMetrics(raw: Record<string, unknown>): PlanDestinationMetrics {
+  return {
+    id: Number(raw.id ?? 0),
+    plan_id: Number(raw.plan_id ?? 0),
+    destination_id: Number(raw.destination_id ?? 0),
+    total_outbound_cost: Number(raw.total_outbound_cost ?? 0),
+    total_return_cost: Number(raw.total_return_cost ?? 0),
+    total_cost: Number(raw.total_cost ?? 0),
+    avg_cost_per_person: Number(raw.avg_cost_per_person ?? 0),
+    total_flight_hours: Number(raw.total_flight_hours ?? 0),
+    avg_flight_hours: Number(raw.avg_flight_hours ?? 0),
+    max_flight_hours: Number(raw.max_flight_hours ?? 0),
+    min_flight_hours: Number(raw.min_flight_hours ?? 0),
+    arrival_spread_hours: Number(raw.arrival_spread_hours ?? 0),
+    departure_spread_hours: Number(raw.departure_spread_hours ?? 0),
+    rank_by_cost: Number(raw.rank_by_cost ?? 0),
+    rank_by_time: Number(raw.rank_by_time ?? 0),
+    rank_by_balance: Number(raw.rank_by_balance ?? 0),
+    overall_rank: Number(raw.overall_rank ?? 0),
+    ai_summary: String(raw.ai_summary ?? ""),
+    searched_at: String(raw.searched_at ?? new Date().toISOString()),
+  };
+}
+
+function normalizeDestinationResult(raw: Record<string, unknown>): PlanDestinationResult {
+  return {
+    result: normalizeDestinationMetrics(raw.result as Record<string, unknown>),
+    destination: {
+      id: Number((raw.destination as Record<string, unknown>)?.id ?? 0),
+      name: String((raw.destination as Record<string, unknown>)?.name ?? ""),
+      country_id: Number((raw.destination as Record<string, unknown>)?.country_id ?? 0),
+      region_id: Number((raw.destination as Record<string, unknown>)?.region_id ?? 0),
+      latitude: Number((raw.destination as Record<string, unknown>)?.latitude ?? 0),
+      longitude: Number((raw.destination as Record<string, unknown>)?.longitude ?? 0),
+      timezone: String((raw.destination as Record<string, unknown>)?.timezone ?? "UTC"),
+      is_active: Boolean((raw.destination as Record<string, unknown>)?.is_active ?? true),
+    },
+  };
+}
+
+function normalizeDestinationDetail(raw: Record<string, unknown>): PlanDestinationDetail {
+  const flights = Array.isArray(raw.flights)
+    ? raw.flights.map<DestinationFlightDetail>((item) => {
+        const record = item as Record<string, unknown>;
+        const flight = record.flight as Record<string, unknown>;
+        return {
+          flight: {
+            id: Number(flight?.id ?? 0),
+            plan_id: Number(flight?.plan_id ?? 0),
+            plan_destination_id: Number(flight?.plan_destination_id ?? 0),
+            participant_id: Number(flight?.participant_id ?? 0),
+            direction: String(flight?.direction ?? ""),
+            origin_airport: String(flight?.origin_airport ?? ""),
+            dest_airport: String(flight?.dest_airport ?? ""),
+            departure_time: String(flight?.departure_time ?? ""),
+            arrival_time: String(flight?.arrival_time ?? ""),
+            duration_minutes: Number(flight?.duration_minutes ?? 0),
+            stops: Number(flight?.stops ?? 0),
+            price: Number(flight?.price ?? 0),
+            currency: String(flight?.currency ?? "USD"),
+            main_carrier: String(flight?.main_carrier ?? ""),
+            carrier_code: String(flight?.carrier_code ?? ""),
+            is_selected: Boolean(flight?.is_selected ?? false),
+            filter_type: String(flight?.filter_type ?? ""),
+            amadeus_offer_id: String(flight?.amadeus_offer_id ?? ""),
+            searched_at: String(flight?.searched_at ?? ""),
+          },
+          participant: normalizeParticipant(record.participant as Record<string, unknown>),
+          display_name: String(record.display_name ?? ""),
+          departure_tag: String(record.departure_tag ?? ""),
+        };
+      })
+    : [];
+
+  return {
+    result: normalizeDestinationResult(raw.result as Record<string, unknown>),
+    flights,
+  };
+}
+
+function participantDisplayName(participant: PlanParticipant) {
+  return participant.guest_name || `Traveler ${participant.id}`;
+}
+
+function generateMockSearchArtifacts(planId: number) {
+  const plan = mockState.plans.find((item) => item.id === planId);
+  if (!plan) {
+    throw new ApiError("Plan not found");
+  }
+
+  const participants = mockState.participants.filter((item) => item.plan_id === planId);
+  const participantCount = participants.length;
+  const searchedAt = new Date().toISOString();
+
+  const results = mockDestinations.slice(0, 3).map<PlanDestinationResult>((destination, index) => {
+    const totalCost = 540 + participantCount * 280 + index * 230;
+    const totalFlightHours = 7.6 * participantCount + index * 4.1;
+    return {
+      result: {
+        id: planId * 100 + index + 1,
+        plan_id: planId,
+        destination_id: destination.id,
+        total_outbound_cost: Number((totalCost * 0.54).toFixed(2)),
+        total_return_cost: Number((totalCost * 0.46).toFixed(2)),
+        total_cost: Number(totalCost.toFixed(2)),
+        avg_cost_per_person: Number((totalCost / Math.max(participantCount, 1)).toFixed(2)),
+        total_flight_hours: Number(totalFlightHours.toFixed(2)),
+        avg_flight_hours: Number((totalFlightHours / Math.max(participantCount, 1)).toFixed(2)),
+        max_flight_hours: Number((8.4 + index * 1.3).toFixed(2)),
+        min_flight_hours: Number((3.2 + index * 0.8).toFixed(2)),
+        arrival_spread_hours: Number((2.1 + index * 1.4).toFixed(2)),
+        departure_spread_hours: Number((2.8 + index * 1.2).toFixed(2)),
+        rank_by_cost: index + 1,
+        rank_by_time: index + 1,
+        rank_by_balance: index + 1,
+        overall_rank: index + 1,
+        ai_summary: "",
+        searched_at: searchedAt,
+      },
+      destination,
+    };
+  });
+
+  const details = Object.fromEntries(
+    results.map((result) => {
+      const flights = participants.flatMap<DestinationFlightDetail>((participant, index) => {
+        const airport = mockAirports.find((item) => item.id === participant.departure_airport_id);
+        const baseDeparture = new Date(plan.event_start);
+        baseDeparture.setUTCDate(baseDeparture.getUTCDate() - 1);
+        baseDeparture.setUTCHours(baseDeparture.getUTCHours() - (8 - index * 2));
+
+        const outboundDeparture = new Date(baseDeparture);
+        const outboundArrival = new Date(baseDeparture);
+        outboundArrival.setUTCHours(outboundArrival.getUTCHours() + 6 + index);
+
+        const returnDeparture = new Date(plan.event_end);
+        returnDeparture.setUTCHours(returnDeparture.getUTCHours() + 5 + index);
+        const returnArrival = new Date(returnDeparture);
+        returnArrival.setUTCHours(returnArrival.getUTCHours() + 6 + index);
+
+        return [
+          {
+            flight: {
+              id: result.result.id * 10 + index * 2 + 1,
+              plan_id: planId,
+              plan_destination_id: result.result.id,
+              participant_id: participant.id,
+              direction: "outbound",
+              origin_airport: airport?.iata_code ?? "TBD",
+              dest_airport: result.destination.name === "Panama City" ? "PTY" : result.destination.name === "Madrid" ? "MAD" : "YYZ",
+              departure_time: outboundDeparture.toISOString(),
+              arrival_time: outboundArrival.toISOString(),
+              duration_minutes: (6 + index) * 60,
+              stops: index % 2,
+              price: Number((result.result.avg_cost_per_person * 0.52).toFixed(2)),
+              currency: plan.currency,
+              main_carrier: index % 2 === 0 ? "Copa Airlines" : "Air Canada",
+              carrier_code: index % 2 === 0 ? "CM" : "AC",
+              is_selected: true,
+              filter_type: "recommended",
+              amadeus_offer_id: `mock-out-${planId}-${participant.id}-${result.destination.id}`,
+              searched_at: searchedAt,
+            },
+            participant,
+            display_name: participantDisplayName(participant),
+            departure_tag: `${participant.departure_city} · ${airport?.iata_code ?? "TBD"}`,
+          },
+          {
+            flight: {
+              id: result.result.id * 10 + index * 2 + 2,
+              plan_id: planId,
+              plan_destination_id: result.result.id,
+              participant_id: participant.id,
+              direction: "return",
+              origin_airport: result.destination.name === "Panama City" ? "PTY" : result.destination.name === "Madrid" ? "MAD" : "YYZ",
+              dest_airport: airport?.iata_code ?? "TBD",
+              departure_time: returnDeparture.toISOString(),
+              arrival_time: returnArrival.toISOString(),
+              duration_minutes: (6 + index) * 60,
+              stops: index % 2,
+              price: Number((result.result.avg_cost_per_person * 0.48).toFixed(2)),
+              currency: plan.currency,
+              main_carrier: index % 2 === 0 ? "Copa Airlines" : "Air Canada",
+              carrier_code: index % 2 === 0 ? "CM" : "AC",
+              is_selected: true,
+              filter_type: "recommended",
+              amadeus_offer_id: `mock-ret-${planId}-${participant.id}-${result.destination.id}`,
+              searched_at: searchedAt,
+            },
+            participant,
+            display_name: participantDisplayName(participant),
+            departure_tag: `${participant.departure_city} · ${airport?.iata_code ?? "TBD"}`,
+          },
+        ];
+      });
+
+      return [
+        `${planId}:${result.destination.id}`,
+        {
+          result,
+          flights,
+        } satisfies PlanDestinationDetail,
+      ];
+    }),
+  ) as Record<string, PlanDestinationDetail>;
+
+  mockState.searchStatuses[planId] = {
+    plan_id: planId,
+    status: "reviewed",
+    started_at: searchedAt,
+    completed_at: searchedAt,
+    destinations: results.length,
+    participants: participantCount,
+  };
+  mockState.destinationResults[planId] = results;
+  for (const [key, value] of Object.entries(details)) {
+    mockState.destinationDetails[key] = value;
+  }
+
+  const planIndex = mockState.plans.findIndex((item) => item.id === planId);
+  if (planIndex >= 0) {
+    mockState.plans[planIndex] = {
+      ...mockState.plans[planIndex],
+      status: "reviewed",
+      updated_at: searchedAt,
+    };
+  }
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -411,4 +667,60 @@ export async function updateParticipant(planId: number, participant: PlanPartici
     },
   );
   return normalizeParticipant(payload);
+}
+
+export async function startPlanSearch(planId: number) {
+  if (config.useMock) {
+    await waitForMock();
+    generateMockSearchArtifacts(planId);
+    return clone(mockState.searchStatuses[planId]);
+  }
+
+  const payload = await requestJson<Record<string, unknown>>(`/plans/${planId}/search`, {
+    method: "POST",
+  });
+  return normalizeSearchStatus(payload);
+}
+
+export async function getPlanSearchStatus(planId: number) {
+  if (config.useMock) {
+    await waitForMock();
+    return clone(
+      mockState.searchStatuses[planId] ?? {
+        plan_id: planId,
+        status: mockState.plans.find((item) => item.id === planId)?.status ?? "draft",
+        destinations: mockState.destinationResults[planId]?.length ?? 0,
+        participants: mockState.participants.filter((item) => item.plan_id === planId).length,
+      },
+    );
+  }
+
+  const payload = await requestJson<Record<string, unknown>>(`/plans/${planId}/search/status`);
+  return normalizeSearchStatus(payload);
+}
+
+export async function listPlanDestinationResults(planId: number) {
+  if (config.useMock) {
+    await waitForMock();
+    return clone(mockState.destinationResults[planId] ?? []);
+  }
+
+  const payload = await requestJson<Record<string, unknown>[]>(`/plans/${planId}/destinations`);
+  return payload.map(normalizeDestinationResult);
+}
+
+export async function getPlanDestinationDetail(planId: number, destinationId: number) {
+  if (config.useMock) {
+    await waitForMock();
+    const detail = mockState.destinationDetails[`${planId}:${destinationId}`];
+    if (!detail) {
+      throw new ApiError("Destination detail not found");
+    }
+    return clone(detail);
+  }
+
+  const payload = await requestJson<Record<string, unknown>>(
+    `/plans/${planId}/destinations/${destinationId}`,
+  );
+  return normalizeDestinationDetail(payload);
 }

@@ -99,8 +99,85 @@ func (f fakeParticipantService) DeleteParticipant(ctx context.Context, participa
 	return nil
 }
 
+type fakeSearchService struct{}
+
+func (f fakeSearchService) StartSearch(ctx context.Context, planID int) (service.SearchStatus, error) {
+	return service.SearchStatus{
+		PlanID:       planID,
+		Status:       "reviewed",
+		Destinations: 2,
+		Participants: 1,
+	}, nil
+}
+
+func (f fakeSearchService) GetSearchStatus(ctx context.Context, planID int) (service.SearchStatus, error) {
+	return service.SearchStatus{
+		PlanID:       planID,
+		Status:       "reviewed",
+		Destinations: 2,
+		Participants: 1,
+	}, nil
+}
+
+func (f fakeSearchService) ListDestinationResults(
+	ctx context.Context,
+	planID int,
+) ([]service.DestinationResult, error) {
+	return []service.DestinationResult{
+		{
+			Result: models.PlanDestination{
+				ID:            11,
+				PlanID:        planID,
+				DestinationID: 7,
+				TotalCost:     8450,
+				OverallRank:   1,
+			},
+			Destination: models.Location{ID: 7, Name: "Panama City"},
+		},
+	}, nil
+}
+
+func (f fakeSearchService) GetDestinationDetail(
+	ctx context.Context,
+	planID int,
+	destinationID int,
+) (service.DestinationDetail, error) {
+	return service.DestinationDetail{
+		Result: service.DestinationResult{
+			Result: models.PlanDestination{
+				ID:            11,
+				PlanID:        planID,
+				DestinationID: destinationID,
+				TotalCost:     8450,
+				OverallRank:   1,
+			},
+			Destination: models.Location{ID: destinationID, Name: "Panama City"},
+		},
+		Flights: []service.DestinationFlightDetail{
+			{
+				Flight: models.PlanFlight{
+					ID:              1,
+					ParticipantID:   1,
+					Direction:       "outbound",
+					OriginAirport:   "JFK",
+					DestAirport:     "PTY",
+					DurationMinutes: 330,
+					Price:           420,
+				},
+				Participant: models.PlanParticipant{
+					ID:            1,
+					GuestName:     "Ana",
+					DepartureCity: "New York",
+				},
+				DisplayName:  "Ana",
+				DepartureTag: "New York · JFK",
+			},
+		},
+	}, nil
+}
+
 func TestRegionsRouteReturnsJSON(t *testing.T) {
-	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}), nil)
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}, fakeSearchService{}), nil)
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/regions", nil)
 	recorder := httptest.NewRecorder()
 
@@ -121,7 +198,7 @@ func TestRegionsRouteReturnsJSON(t *testing.T) {
 }
 
 func TestCreatePlanRouteCreatesPlan(t *testing.T) {
-	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}), nil)
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}, fakeSearchService{}), nil)
 
 	body := bytes.NewBufferString(`{
 		"organization_id": 1,
@@ -158,7 +235,7 @@ func TestCreatePlanRouteCreatesPlan(t *testing.T) {
 }
 
 func TestAddParticipantsAcceptsSingleObject(t *testing.T) {
-	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}), nil)
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}, fakeSearchService{}), nil)
 
 	body := bytes.NewBufferString(`{
 		"guest_name": "Ana",
@@ -187,7 +264,7 @@ func TestAddParticipantsAcceptsSingleObject(t *testing.T) {
 }
 
 func TestListPlansRequiresOrgID(t *testing.T) {
-	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}), nil)
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}, fakeSearchService{}), nil)
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/plans", nil)
 	recorder := httptest.NewRecorder()
 
@@ -198,9 +275,51 @@ func TestListPlansRequiresOrgID(t *testing.T) {
 	}
 }
 
+func TestStartSearchRouteReturnsStatus(t *testing.T) {
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}, fakeSearchService{}), nil)
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/plans/42/search", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusOK, recorder.Code, recorder.Body.String())
+	}
+
+	var payload service.SearchStatus
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("expected valid json: %v", err)
+	}
+
+	if payload.PlanID != 42 || payload.Status != "reviewed" {
+		t.Fatalf("unexpected search status: %+v", payload)
+	}
+}
+
+func TestListDestinationResultsRouteReturnsRankedCards(t *testing.T) {
+	server := New(handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}, fakeSearchService{}), nil)
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/plans/42/destinations", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusOK, recorder.Code, recorder.Body.String())
+	}
+
+	var payload []service.DestinationResult
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("expected valid json: %v", err)
+	}
+
+	if len(payload) != 1 || payload[0].Destination.Name != "Panama City" || payload[0].Result.OverallRank != 1 {
+		t.Fatalf("unexpected destination results: %+v", payload)
+	}
+}
+
 func TestCORSAllowsConfiguredLocalOrigin(t *testing.T) {
 	server := New(
-		handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}),
+		handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}, fakeSearchService{}),
 		[]string{"http://127.0.0.1:5173"},
 	)
 
@@ -217,7 +336,7 @@ func TestCORSAllowsConfiguredLocalOrigin(t *testing.T) {
 
 func TestCORSHandlesPreflightRequest(t *testing.T) {
 	server := New(
-		handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}),
+		handler.NewAPI(fakeReferenceService{}, fakePlanService{}, fakeParticipantService{}, fakeSearchService{}),
 		[]string{"http://localhost:5173"},
 	)
 
@@ -240,4 +359,5 @@ var (
 	_ service.ReferenceService   = fakeReferenceService{}
 	_ service.PlanService        = fakePlanService{}
 	_ service.ParticipantService = fakeParticipantService{}
+	_ service.SearchService      = fakeSearchService{}
 )

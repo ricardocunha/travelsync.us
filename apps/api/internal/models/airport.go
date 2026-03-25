@@ -10,7 +10,7 @@ type Airport struct {
 	Latitude       float64 `json:"latitude"`
 	Longitude      float64 `json:"longitude"`
 	Altitude       int     `json:"altitude"`
-	TimezoneOffset int     `json:"timezone_offset"`
+	TimezoneOffset float64 `json:"timezone_offset"`
 	TimezoneCode   string  `json:"timezone_code"`
 	Type           string  `json:"type"`
 }
