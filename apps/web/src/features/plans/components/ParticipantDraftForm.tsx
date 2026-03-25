@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { FormField } from "@/components/FormField";
-import { listAirports } from "@/lib/api";
+import { ApiError, listAirports } from "@/lib/api";
 import type { Airport, Country } from "@/features/reference/types";
 import type { ParticipantInput } from "@/features/plans/types";
 
@@ -24,49 +24,86 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
   const [airports, setAirports] = useState<Airport[]>([]);
   const [loadingAirports, setLoadingAirports] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [lookupVersion, setLookupVersion] = useState(0);
 
   useEffect(() => {
     if (draft.departure_city.trim().length < 2) {
       setAirports([]);
       setLoadingAirports(false);
+      setMessage(null);
       return;
     }
 
     let cancelled = false;
-    setLoadingAirports(true);
-    void listAirports({
-      countryId: draft.departure_country_id ?? undefined,
-      city: draft.departure_city,
-    })
-      .then((items) => {
-        if (!cancelled) {
-          setAirports(items);
-          if (items.length === 0) {
-            setMessage(
-              `No airports found for "${draft.departure_city.trim()}". ` +
-                "Try a nearby city, a destination alias like New York, or set the country first.",
-            );
-          } else {
-            setMessage(null);
-          }
+    const lookupCity = draft.departure_city.trim();
+
+    async function fetchAirportsWithRetry(retriesLeft: number): Promise<void> {
+      try {
+        const items = await listAirports({
+          countryId: draft.departure_country_id ?? undefined,
+          city: draft.departure_city,
+        });
+
+        if (cancelled) {
+          return;
         }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAirports([]);
+
+        setAirports(items);
+        setDraft((current) => {
+          if (current.departure_airport_id || items.length !== 1) {
+            return current;
+          }
+
+          return {
+            ...current,
+            departure_airport_id: items[0]?.id ?? 0,
+          };
+        });
+
+        if (items.length === 0) {
+          setMessage(
+            `No airports found for "${lookupCity}". ` +
+              "Try a nearby city, a destination alias like New York, or set the country first.",
+          );
+          return;
+        }
+
+        setMessage(null);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        if (retriesLeft > 0) {
+          await new Promise((resolve) => {
+            window.setTimeout(resolve, 350);
+          });
+          if (!cancelled) {
+            await fetchAirportsWithRetry(retriesLeft - 1);
+          }
+          return;
+        }
+
+        setAirports([]);
+        if (error instanceof ApiError) {
+          setMessage(error.message);
+        } else {
           setMessage("Airport search failed. Check that the Go API is running, then try again.");
         }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoadingAirports(false);
-        }
-      });
+      }
+    }
+
+    setLoadingAirports(true);
+    void fetchAirportsWithRetry(1).finally(() => {
+      if (!cancelled) {
+        setLoadingAirports(false);
+      }
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [draft.departure_city, draft.departure_country_id]);
+  }, [draft.departure_city, draft.departure_country_id, lookupVersion]);
 
   function updateDraft<Key extends keyof ParticipantInput>(key: Key, value: ParticipantInput[Key]) {
     setMessage(null);
@@ -98,6 +135,11 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
     setDraft(emptyDraft);
     setAirports([]);
     setMessage(null);
+  }
+
+  function retryAirportLookup() {
+    setMessage(null);
+    setLookupVersion((current) => current + 1);
   }
 
   return (
@@ -203,7 +245,20 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
         </FormField>
       </div>
 
-      {message ? <p className="text-sm font-semibold text-[color:var(--signal-coral)]">{message}</p> : null}
+      {message ? (
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-[color:var(--signal-coral)]">{message}</p>
+          {draft.departure_city.trim().length >= 2 ? (
+            <button
+              className="button-secondary"
+              onClick={retryAirportLookup}
+              type="button"
+            >
+              Retry airport search
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex justify-end border-t border-[rgba(21,34,49,0.08)] pt-3">
         <button

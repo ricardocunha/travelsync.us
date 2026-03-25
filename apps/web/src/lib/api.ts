@@ -437,13 +437,25 @@ function generateMockSearchArtifacts(planId: number) {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${config.apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    ...init,
-  });
+  const url = `${config.apiBaseUrl}${path}`;
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+      ...init,
+    });
+  } catch {
+    const error = new ApiError(
+      `Could not reach the Go API at ${config.apiBaseUrl}. ` +
+        "Check that apps/api is running and that your browser origin is allowed by WEB_ALLOWED_ORIGINS.",
+    );
+    error.code = "network_error";
+    throw error;
+  }
 
   if (!response.ok) {
     const error = new ApiError("Request failed");
@@ -454,7 +466,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
       error.code = payload.error?.code;
       error.message = payload.error?.message ?? error.message;
     } catch {
-      error.message = response.statusText || error.message;
+      error.message = response.statusText || `Request failed for ${url}`;
     }
 
     throw error;
