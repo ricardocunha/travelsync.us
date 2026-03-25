@@ -24,11 +24,13 @@ func main() {
 	referenceRepo := repository.NewMySQLReferenceRepository(db)
 	planRepo := repository.NewMySQLPlanRepository(db)
 	participantRepo := repository.NewMySQLParticipantRepository(db)
+	searchRepo := repository.NewMySQLSearchRepository(db)
 
 	api := handler.NewAPI(
 		service.NewReferenceService(referenceRepo),
 		service.NewPlanService(planRepo),
 		service.NewParticipantService(planRepo, participantRepo),
+		service.NewSearchService(planRepo, participantRepo, referenceRepo, searchRepo),
 	)
 
 	server := &http.Server{

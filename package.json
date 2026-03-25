@@ -6,8 +6,9 @@
     "apps/tests"
   ],
   "scripts": {
-    "dev:web": "npm run dev --workspace @travelsync/web",
-    "dev:web:test": "npm run dev --workspace @travelsync/web -- --host 127.0.0.1 --port 4173",
+    "dev": "zsh scripts/dev.sh",
+    "dev:web": "npm run dev --workspace @travelsync/web -- --host 127.0.0.1 --port 5173 --strictPort",
+    "dev:web:test": "npm run dev --workspace @travelsync/web -- --host 127.0.0.1 --port 4173 --strictPort",
     "build:web": "npm run build --workspace @travelsync/web",
     "test:web": "npm run test --workspace @travelsync/web",
     "test:e2e": "npm run test --workspace @travelsync/tests"

@@ -45,4 +45,14 @@ test.describe("travel sync frontend slice", () => {
     await expect(page.getByText("Participant added.")).toBeVisible();
     await expect(page.getByText("Marta")).toBeVisible();
   });
+
+  test("runs a destination search from the plan detail page", async ({ page }) => {
+    await page.goto("/plans/1");
+
+    await page.getByRole("button", { name: "Run destination search" }).click();
+
+    await expect(page.getByText("Destination search completed.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Panama City" }).first()).toBeVisible();
+    await expect(page.getByText("Selected destination detail")).toBeVisible();
+  });
 });

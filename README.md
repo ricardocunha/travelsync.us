@@ -17,18 +17,21 @@ Implemented today:
 
 - local MySQL bootstrapping with ordered schema files
 - Go API health, reference data, plan CRUD, and participant CRUD
+- Go API destination search kickoff, status, ranked destination results, and destination detail
 - React frontend for:
   - landing page
   - plans list
   - create-plan wizard
   - plan detail and participant management
+  - running destination search from the plan detail page
+  - ranked destination cards and route detail on the plan detail page
 - Playwright smoke tests for the first frontend slice
 
 Still scaffolded or pending:
 
-- Amadeus flight search orchestration
-- destination scoring and ranking
+- live Amadeus-backed flight search integration
 - recommendation endpoint integration
+- destination selection workflow
 - final summary workflow
 - a running HTTP wrapper around `apps/agents`
 
@@ -121,6 +124,23 @@ Quick health check:
 curl http://127.0.0.1:9081/health
 ```
 
+## Run API And Web Together
+
+After the database is up, the simplest local command is:
+
+```bash
+npm run dev
+```
+
+That command:
+
+- loads `.env` if it exists
+- starts the Go API
+- starts the React web app on `http://127.0.0.1:5173`
+- stops both when you press `Ctrl-C`
+
+If it exits immediately, the most common cause is that port `9081` or `5173` is already being used by an older local process.
+
 ## Run the React Frontend
 
 In a second terminal:
@@ -135,7 +155,6 @@ npm run dev:web
 Then open the Vite URL shown in the terminal, usually:
 
 - `http://127.0.0.1:5173`
-- or `http://localhost:5173`
 
 If the frontend shows a reference-data error:
 
@@ -162,12 +181,17 @@ docker compose -f data/docker-compose.yaml up -d
 ```
 
 ```bash
-set -a && source .env && set +a && cd apps/api && go run ./cmd/server
+npm run dev
 ```
 
-```bash
-set -a && source .env && set +a && npm run dev:web
-```
+Then:
+
+1. create or open a plan
+2. add at least one participant with a departure airport
+3. open the plan detail page
+4. click `Run destination search`
+
+The current local search slice stores and displays ranked destination results, but it still uses the Go-side deterministic search estimator instead of the live Amadeus API.
 
 ## Tests
 
@@ -203,4 +227,4 @@ zsh scripts/verify_final.sh
 
 ## Notes About the Agent Layer
 
-`apps/agents` is implemented as a Python package, but it is not yet exposed as a standalone HTTP service in local development. The current Go API does not depend on a running agent server for the implemented plan-management flows.
+`apps/agents` is implemented as a Python package, but it is not yet exposed as a standalone HTTP service in local development. The current Go API does not depend on a running agent server for the implemented plan-management or search-ranking flows.
