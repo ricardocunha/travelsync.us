@@ -44,98 +44,91 @@ export function PlansListPage() {
 
   return (
     <div className="space-y-6">
-      <SectionCard className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div className="signal-surface rounded-[2.5rem] p-6 sm:p-7">
-          <div className="radar-dots" />
-          <div className="relative z-10">
-            <p className="eyebrow">Plan board</p>
-            <h1 className="section-title mt-4 max-w-3xl text-6xl font-semibold">
-              Track the plans that are ready for comparison.
-            </h1>
-            <p className="muted-copy mt-5 max-w-2xl text-base leading-8">
-              The current flow now carries plans from setup into destination scoring. Recommendation,
-              selection, and summary still land in later slices, but the ranking engine is no longer theoretical.
-            </p>
-          </div>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="label-mono text-[color:var(--accent)]">Plan board</p>
+          <h1 className="heading-display mt-2 text-4xl sm:text-5xl">Your plans</h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-[color:var(--text-secondary)]">
+            Track plans from setup through destination scoring. Recommendation and summary land in later slices.
+          </p>
         </div>
+        <Link
+          className="btn-primary shrink-0"
+          to="/plans/new"
+        >
+          Create new plan
+        </Link>
+      </div>
 
-        <div className="grid gap-4">
-          <SectionCard className="rounded-[2.2rem] p-5">
-            <div className="eyebrow">Live workspace status</div>
-            <div className="mt-5 space-y-4 text-sm leading-8 text-[color:var(--ink-700)]">
-              <p>Organization scope: {config.organizationId}</p>
-              <p>Data source: {config.useMock ? "Mock mode for local flow and browser tests" : "Go API"}</p>
-              <p>Current user-facing milestone: ranked destination results on each plan detail page.</p>
-            </div>
-          </SectionCard>
-
-          <Link
-            className="button-primary w-fit"
-            to="/plans/new"
-          >
-            Create a new plan
-          </Link>
+      <div className="flex gap-4">
+        <div className="chip px-3.5 py-2 text-xs text-[color:var(--text-tertiary)]">
+          <span className="text-[color:var(--text-secondary)]">Org:</span> {config.organizationId}
         </div>
-      </SectionCard>
+        <div className="chip px-3.5 py-2 text-xs text-[color:var(--text-tertiary)]">
+          <span className="text-[color:var(--text-secondary)]">Source:</span> {config.useMock ? "Mock" : "API"}
+        </div>
+      </div>
 
       {loading ? (
-        <SectionCard className="rounded-[2.4rem]">
-          <p className="text-sm font-semibold text-[color:var(--ink-600)]">Loading plans...</p>
+        <SectionCard>
+          <p className="text-sm text-[color:var(--text-secondary)]">Loading plans...</p>
         </SectionCard>
       ) : error ? (
-        <SectionCard className="rounded-[2.4rem]">
-          <p className="text-sm font-semibold text-[color:var(--signal-coral)]">{error}</p>
+        <SectionCard>
+          <p className="text-sm font-medium text-[color:var(--rose)]">{error}</p>
         </SectionCard>
       ) : plans.length === 0 ? (
-        <SectionCard className="rounded-[2.4rem]">
-          <p className="eyebrow">No plans yet</p>
-          <h2 className="section-title mt-4 text-5xl font-semibold">Start with one event window and one team.</h2>
-          <p className="mt-4 max-w-2xl text-sm leading-8 text-[color:var(--ink-600)]">
+        <SectionCard className="p-8 text-center">
+          <p className="label-mono">No plans yet</p>
+          <h2 className="heading-section mt-3 text-3xl">Start with one event window and one team.</h2>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[color:var(--text-secondary)]">
             Once a plan exists, the detail page becomes the working surface for scoring destinations and inspecting route detail.
           </p>
         </SectionCard>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           {plans.map((plan) => (
             <Link
-              className="paper-panel rounded-[2.4rem] p-6 transition duration-200 hover:-translate-y-1"
+              className="card group p-5 transition duration-200 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-md)]"
               key={plan.id}
               to={`/plans/${plan.id}`}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="eyebrow">Plan #{plan.id}</p>
-                  <h2 className="section-title mt-4 text-4xl font-semibold">{plan.name}</h2>
+                  <p className="label-mono">Plan #{plan.id}</p>
+                  <h2 className="heading-section mt-2 text-2xl transition group-hover:text-[color:var(--accent-hover)]">
+                    {plan.name}
+                  </h2>
                 </div>
                 <StatusPill status={plan.status} />
               </div>
 
-              <p className="mt-5 text-sm leading-8 text-[color:var(--ink-600)]">
+              <p className="mt-3 line-clamp-2 text-sm leading-6 text-[color:var(--text-secondary)]">
                 {plan.description || "No description yet."}
               </p>
 
-              <div className="mt-6 grid gap-4 xl:grid-cols-2">
-                <div className="signal-surface rounded-[1.8rem] p-4">
-                  <div className="eyebrow">Event window</div>
-                  <div className="mt-3 text-lg font-semibold text-[color:var(--paper-50)]">
+              <div className="mt-5 grid gap-3 xl:grid-cols-2">
+                <div className="card-dark rounded-lg p-3.5">
+                  <div className="label-mono text-[0.62rem]">Event window</div>
+                  <div className="mt-2 text-sm font-semibold">
                     {formatDateTime(plan.event_start, plan.event_timezone)}
                   </div>
-                  <div className="mt-1 text-sm text-[color:rgba(248,243,235,0.72)]">
+                  <div className="mt-0.5 text-xs text-[color:var(--text-tertiary)]">
                     {formatDateTime(plan.event_end, plan.event_timezone)}
                   </div>
                 </div>
 
-                <div className="grid gap-3">
-                  <div className="route-chip rounded-[1.4rem] px-4 py-4">
-                    <div className="eyebrow">Constraints</div>
-                    <div className="mt-2 text-sm font-semibold text-[color:var(--ink-900)]">
+                <div className="grid gap-2">
+                  <div className="chip px-3.5 py-2.5">
+                    <div className="label-mono text-[0.6rem]">Constraints</div>
+                    <div className="mt-1 text-xs font-semibold">
                       {plan.search_mode} · {plan.cabin_class}
                     </div>
                   </div>
-                  <div className="route-chip rounded-[1.4rem] px-4 py-4">
-                    <div className="eyebrow">Budget</div>
-                    <div className="mt-2 text-sm font-semibold text-[color:var(--ink-900)]">
-                      {formatCurrency(plan.max_budget_per_person, plan.currency)} per traveler
+                  <div className="chip px-3.5 py-2.5">
+                    <div className="label-mono text-[0.6rem]">Budget</div>
+                    <div className="mt-1 text-xs font-semibold">
+                      {formatCurrency(plan.max_budget_per_person, plan.currency)} / traveler
                     </div>
                   </div>
                 </div>

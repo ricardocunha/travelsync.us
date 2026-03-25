@@ -9,38 +9,36 @@ const principles = [
   "Keep the organizer in control with transparent tradeoffs instead of a black box verdict.",
 ];
 
-const systemPoints = [
-  "multi-origin teams",
-  "curated destination catalog",
-  "rank by cost, burden, and togetherness",
+const steps = [
+  { num: "01", title: "Shape the event window", desc: "Capture dates, buffers, budget, and cabin class before any destination bias creeps in." },
+  { num: "02", title: "Map team origins", desc: "Every participant can leave from a different airport, even inside the same city." },
+  { num: "03", title: "Run ranked outcomes", desc: "Search and scoring attach directly to each plan. Recommendation and summary come next." },
 ];
 
 export function LandingPage() {
   return (
     <div className="space-y-6">
-      <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <SectionCard className="signal-surface rounded-[2.8rem] p-6 sm:p-8">
-          <div className="radar-dots" />
-          <div className="grid gap-8 xl:grid-cols-[1.12fr_0.88fr] xl:items-end">
-            <div className="relative z-10">
-              <p className="eyebrow">Distributed teams</p>
-              <h1 className="section-title mt-4 max-w-3xl text-6xl font-semibold leading-[0.9] sm:text-7xl">
+      <section className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
+        <SectionCard className="card-accent p-8 sm:p-10">
+          <div className="grid gap-10 xl:grid-cols-[1.15fr_0.85fr] xl:items-end">
+            <div>
+              <p className="label-mono text-[color:var(--accent-hover)]">Distributed teams</p>
+              <h1 className="heading-display mt-4 max-w-2xl text-5xl sm:text-6xl">
                 Pick the best meeting point after the data speaks.
               </h1>
-              <p className="muted-copy mt-6 max-w-2xl text-base leading-8 sm:text-lg">
-                Travel Sync compares curated destinations against your team&apos;s departure cities,
+              <p className="mt-6 max-w-xl text-base leading-7 text-[color:var(--text-secondary)]">
+                TravelSync compares curated destinations against your team&apos;s departure cities,
                 then turns cost, flight time, and arrival sync into an operations-grade planning brief.
               </p>
-
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
-                  className="button-primary"
+                  className="btn-primary"
                   to="/plans/new"
                 >
                   Start a plan
                 </Link>
                 <Link
-                  className="button-secondary"
+                  className="btn-secondary"
                   to="/plans"
                 >
                   Review plans
@@ -48,16 +46,16 @@ export function LandingPage() {
               </div>
             </div>
 
-            <div className="relative z-10 rounded-[2.2rem] border border-white/12 bg-white/6 p-5 backdrop-blur-md">
-              <div className="eyebrow text-[color:rgba(248,243,235,0.78)]">Current product shape</div>
-              <div className="mt-5 grid gap-3">
+            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-raised)] p-5">
+              <p className="label-mono">Design principles</p>
+              <div className="mt-4 grid gap-2.5">
                 {principles.map((principle, index) => (
                   <div
-                    className="rounded-[1.4rem] border border-white/12 bg-white/8 px-4 py-4 text-sm leading-7 text-[color:rgba(248,243,235,0.9)]"
+                    className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3 text-sm leading-6 text-[color:var(--text-secondary)]"
                     key={principle}
                   >
-                    <span className="mr-3 font-[var(--font-mono)] text-[0.72rem] tracking-[0.16em] text-[color:rgba(248,243,235,0.62)]">
-                      0{index + 1}
+                    <span className="mr-2 font-[var(--font-mono)] text-xs text-[color:var(--accent)]">
+                      {String(index + 1).padStart(2, "0")}
                     </span>
                     {principle}
                   </div>
@@ -67,38 +65,38 @@ export function LandingPage() {
           </div>
         </SectionCard>
 
-        <div className="grid gap-6">
+        <div className="grid gap-4">
           <MetricCard
-            accent="from-[rgba(73,184,199,0.3)] to-transparent"
+            accent="bg-[var(--cyan)]"
             label="Planning lens"
             value="Cost + time + togetherness"
           />
           <MetricCard
-            accent="from-[rgba(244,118,86,0.25)] to-transparent"
+            accent="bg-[var(--rose)]"
             label="Frontend slice"
-            value="Plan setup, ranking, and route detail"
+            value="Plan setup, ranking & route detail"
           />
           <MetricCard
-            accent="from-[rgba(240,180,65,0.3)] to-transparent"
-            label="Next backend milestone"
-            value="Recommendation, selection, and final summary"
+            accent="bg-[var(--amber)]"
+            label="Next milestone"
+            value="Recommendation & final summary"
           />
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-        <SectionCard className="rounded-[2.4rem] p-6 sm:p-7">
-          <p className="eyebrow">System logic</p>
-          <h2 className="section-title mt-4 text-5xl font-semibold">Destination bias dies early.</h2>
-          <p className="mt-4 max-w-xl text-sm leading-8 text-[color:var(--ink-600)]">
+      <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <SectionCard className="p-6 sm:p-8">
+          <p className="label-mono">How it works</p>
+          <h2 className="heading-section mt-3 text-4xl">Destination bias dies early.</h2>
+          <p className="mt-4 max-w-lg text-sm leading-7 text-[color:var(--text-secondary)]">
             Instead of arguing about a city first, the workflow starts with the team map, the event
             window, and the travel constraints that actually shape the outcome.
           </p>
 
-          <div className="mt-8 grid gap-3">
-            {systemPoints.map((point) => (
+          <div className="mt-6 grid gap-2.5">
+            {["Multi-origin teams", "Curated destination catalog", "Rank by cost, burden & togetherness"].map((point) => (
               <div
-                className="route-chip rounded-[1.5rem] px-4 py-4 text-sm font-medium text-[color:var(--ink-800)]"
+                className="chip px-4 py-3 text-sm font-medium text-[color:var(--text-secondary)]"
                 key={point}
               >
                 {point}
@@ -107,28 +105,17 @@ export function LandingPage() {
           </div>
         </SectionCard>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <SectionCard className="rounded-[2.4rem] p-6">
-            <p className="eyebrow">Step 1</p>
-            <h2 className="section-title mt-4 text-4xl font-semibold">Shape the event window.</h2>
-            <p className="mt-4 text-sm leading-8 text-[color:var(--ink-600)]">
-              Capture dates, buffers, budget, cabin class, and search mode before any destination bias can creep in.
-            </p>
-          </SectionCard>
-          <SectionCard className="rounded-[2.4rem] p-6">
-            <p className="eyebrow">Step 2</p>
-            <h2 className="section-title mt-4 text-4xl font-semibold">Map the team&apos;s true origins.</h2>
-            <p className="mt-4 text-sm leading-8 text-[color:var(--ink-600)]">
-              Every participant can leave from a different airport, even inside the same city. The interface is already built for that.
-            </p>
-          </SectionCard>
-          <SectionCard className="rounded-[2.4rem] p-6">
-            <p className="eyebrow">Step 3</p>
-            <h2 className="section-title mt-4 text-4xl font-semibold">Run ranked outcomes.</h2>
-            <p className="mt-4 text-sm leading-8 text-[color:var(--ink-600)]">
-              Search and scoring now attach directly to each plan. The next slices add recommendation, selection, and final summary workflows.
-            </p>
-          </SectionCard>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {steps.map((item) => (
+            <SectionCard
+              className="p-5"
+              key={item.num}
+            >
+              <p className="label-mono text-[color:var(--accent)]">{item.num}</p>
+              <h3 className="heading-section mt-3 text-xl">{item.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-[color:var(--text-secondary)]">{item.desc}</p>
+            </SectionCard>
+          ))}
         </div>
       </section>
     </div>

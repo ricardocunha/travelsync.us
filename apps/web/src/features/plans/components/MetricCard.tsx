@@ -4,15 +4,12 @@ type MetricCardProps = {
   accent?: string;
 };
 
-export function MetricCard({ label, value, accent = "from-amber-200 to-transparent" }: MetricCardProps) {
+export function MetricCard({ label, value, accent = "bg-[var(--accent)]" }: MetricCardProps) {
   return (
-    <div className="paper-panel metric-band rounded-[1.9rem] p-5">
-      <div className={`pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-br ${accent}`} />
-      <div className="radar-dots" />
-      <div className="relative">
-        <div className="eyebrow">{label}</div>
-        <div className="section-title mt-5 text-[2.3rem] font-semibold leading-[0.92]">{value}</div>
-      </div>
+    <div className="metric-chip p-5">
+      <div className={`absolute inset-x-0 top-0 h-[2px] ${accent}`} />
+      <div className="label-mono">{label}</div>
+      <div className="heading-section mt-3 text-xl">{value}</div>
     </div>
   );
 }

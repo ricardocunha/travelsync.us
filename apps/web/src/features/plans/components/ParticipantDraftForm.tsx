@@ -143,12 +143,12 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
   }
 
   return (
-    <div className="command-surface space-y-4 rounded-[2rem] p-4 sm:p-5">
+    <div className="space-y-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-raised)] p-4 sm:p-5">
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="Guest name">
-          <div className="field-shell rounded-2xl px-4 py-3">
+          <div className="input-wrap px-3 py-2.5">
             <input
-              className="w-full bg-transparent outline-none"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-[color:var(--text-tertiary)]"
               onChange={(event) => updateDraft("guest_name", event.target.value)}
               placeholder="Ana Silva"
               value={draft.guest_name}
@@ -160,9 +160,9 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
           hint="Optional"
           label="Guest email"
         >
-          <div className="field-shell rounded-2xl px-4 py-3">
+          <div className="input-wrap px-3 py-2.5">
             <input
-              className="w-full bg-transparent outline-none"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-[color:var(--text-tertiary)]"
               onChange={(event) => updateDraft("guest_email", event.target.value)}
               placeholder="ana@example.com"
               type="email"
@@ -177,9 +177,9 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
           hint="Optional"
           label="Departure country"
         >
-          <div className="field-shell rounded-2xl px-4 py-3">
+          <div className="input-wrap px-3 py-2.5">
             <select
-              className="w-full bg-transparent outline-none"
+              className="w-full bg-transparent text-sm outline-none"
               onChange={(event) =>
                 updateDraft(
                   "departure_country_id",
@@ -202,9 +202,9 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
         </FormField>
 
         <FormField label="Departure city">
-          <div className="field-shell rounded-2xl px-4 py-3">
+          <div className="input-wrap px-3 py-2.5">
             <input
-              className="w-full bg-transparent outline-none"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-[color:var(--text-tertiary)]"
               onChange={(event) => updateDraft("departure_city", event.target.value)}
               placeholder="Brasilia"
               value={draft.departure_city}
@@ -224,9 +224,9 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
           }
           label="Departure airport"
         >
-          <div className="field-shell rounded-2xl px-4 py-3">
+          <div className="input-wrap px-3 py-2.5">
             <select
-              className="w-full bg-transparent outline-none"
+              className="w-full bg-transparent text-sm outline-none"
               disabled={loadingAirports || draft.departure_city.trim().length < 2}
               onChange={(event) => updateDraft("departure_airport_id", Number(event.target.value))}
               value={draft.departure_airport_id || ""}
@@ -246,11 +246,11 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
       </div>
 
       {message ? (
-        <div className="space-y-3">
-          <p className="text-sm font-semibold text-[color:var(--signal-coral)]">{message}</p>
+        <div className="space-y-2.5">
+          <p className="text-sm font-medium text-[color:var(--rose)]">{message}</p>
           {draft.departure_city.trim().length >= 2 ? (
             <button
-              className="button-secondary"
+              className="btn-secondary text-sm"
               onClick={retryAirportLookup}
               type="button"
             >
@@ -260,9 +260,9 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
         </div>
       ) : null}
 
-      <div className="flex justify-end border-t border-[rgba(21,34,49,0.08)] pt-3">
+      <div className="flex justify-end border-t border-[var(--border-subtle)] pt-3">
         <button
-          className="button-secondary"
+          className="btn-secondary text-sm"
           onClick={handleAdd}
           type="button"
         >
