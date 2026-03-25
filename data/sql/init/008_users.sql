@@ -15,3 +15,28 @@ CREATE TABLE users (
     FOREIGN KEY (default_airport_id) REFERENCES airports(id),
     FOREIGN KEY (country_id) REFERENCES countries(id)
 );
+
+INSERT INTO users (
+    id,
+    username,
+    email,
+    password_hash,
+    level,
+    organization_id,
+    city,
+    default_airport_id,
+    country_id,
+    timezone
+) VALUES
+(
+    1,
+    'local.owner',
+    'local.owner@travelsync.local',
+    'local-dev-placeholder',
+    'owner',
+    1,
+    'Brasilia',
+    2531,
+    6,
+    'America/Sao_Paulo'
+);

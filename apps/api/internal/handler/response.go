@@ -55,9 +55,12 @@ func parseOptionalQueryInt(r *http.Request, key string) (int, error) {
 
 func handleError(w http.ResponseWriter, err error) {
 	var validationErr service.ValidationError
+	var constraintErr repository.ConstraintError
 	switch {
 	case errors.As(err, &validationErr):
 		writeError(w, http.StatusBadRequest, "invalid_request", validationErr.Message)
+	case errors.As(err, &constraintErr):
+		writeError(w, http.StatusBadRequest, "invalid_request", constraintErr.Message)
 	case errors.Is(err, repository.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "resource not found")
 	default:

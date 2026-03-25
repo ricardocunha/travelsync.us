@@ -212,23 +212,61 @@ func scanAirports(rows *sql.Rows) ([]models.Airport, error) {
 
 func scanAirport(scanner airportScanner) (models.Airport, error) {
 	var item models.Airport
+	var (
+		name           sql.NullString
+		city           sql.NullString
+		countryID      sql.NullInt64
+		iataCode       sql.NullString
+		icaoCode       sql.NullString
+		latitude       sql.NullFloat64
+		longitude      sql.NullFloat64
+		altitude       sql.NullInt64
+		timezoneOffset sql.NullFloat64
+		timezoneCode   sql.NullString
+		airportType    sql.NullString
+	)
+
 	err := scanner.Scan(
 		&item.ID,
-		&item.Name,
-		&item.City,
-		&item.CountryID,
-		&item.IATACode,
-		&item.ICAOCode,
-		&item.Latitude,
-		&item.Longitude,
-		&item.Altitude,
-		&item.TimezoneOffset,
-		&item.TimezoneCode,
-		&item.Type,
+		&name,
+		&city,
+		&countryID,
+		&iataCode,
+		&icaoCode,
+		&latitude,
+		&longitude,
+		&altitude,
+		&timezoneOffset,
+		&timezoneCode,
+		&airportType,
 	)
 	if err != nil {
 		return models.Airport{}, err
 	}
+
+	item.Name = name.String
+	item.City = city.String
+	item.IATACode = iataCode.String
+	item.ICAOCode = icaoCode.String
+	item.TimezoneCode = timezoneCode.String
+	item.Type = airportType.String
+
+	if countryID.Valid {
+		item.CountryID = int(countryID.Int64)
+	}
+	if latitude.Valid {
+		item.Latitude = latitude.Float64
+	}
+	if longitude.Valid {
+		item.Longitude = longitude.Float64
+	}
+	if altitude.Valid {
+		item.Altitude = int(altitude.Int64)
+	}
+	if timezoneOffset.Valid {
+		item.TimezoneOffset = timezoneOffset.Float64
+	}
+
 	return item, nil
 }
 

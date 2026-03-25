@@ -52,12 +52,12 @@ func (r *MySQLPlanRepository) CreatePlan(ctx context.Context, plan models.Plan) 
 		nullableJSON(plan.RegionFilterIDs),
 	)
 	if err != nil {
-		return models.Plan{}, err
+		return models.Plan{}, mapMySQLError(err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return models.Plan{}, err
+		return models.Plan{}, mapMySQLError(err)
 	}
 
 	return r.GetPlan(ctx, int(id))
@@ -140,7 +140,7 @@ func (r *MySQLPlanRepository) UpdatePlan(ctx context.Context, plan models.Plan) 
 func (r *MySQLPlanRepository) DeletePlan(ctx context.Context, planID int) error {
 	result, err := r.db.ExecContext(ctx, `DELETE FROM plans WHERE id = ?`, planID)
 	if err != nil {
-		return err
+		return mapMySQLError(err)
 	}
 
 	affected, err := result.RowsAffected()
