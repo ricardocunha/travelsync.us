@@ -43,11 +43,16 @@ Current implemented backend slice:
 - MySQL-backed reference data queries
 - plan CRUD
 - participant CRUD
+- destination search kickoff and status
+- deterministic search-result generation for local development
+- destination scoring, ranking, and persistence into `plan_destinations` and `plan_flights`
+- destination result detail with per-traveler selected flights
 
 Current implemented frontend slice:
 
 - a Vite React app for landing, plans list, plan creation, and plan detail flows
 - a mock-capable frontend API layer aligned with the current Go endpoints
+- plan detail controls for running search and inspecting ranked destinations
 - Playwright smoke tests for the first browser journeys
 
 ## Workspace Strategy
@@ -138,12 +143,12 @@ The implemented backend foundation now includes:
 - ordered SQL setup files through `data/sql/init/012_plan_flights.sql`
 - a compilable Go API with the target package layout
 - repository and service wiring to MySQL for reference data, plans, and participants
+- repository and service wiring for search result persistence and ranked destination reads
 - a documented Python agent boundary for later integration
 
 Next steps should extend the backend in this order:
 
-- add Amadeus OAuth, token caching, and flight search client logic
-- build the concurrent outbound and return search orchestrator
-- implement destination scoring and ranking
+- replace the deterministic local search estimator with live Amadeus OAuth, token caching, and flight search client logic
 - connect the Go API to the Python agent layer for recommendation and itinerary workflows
-- add final summary and destination-selection flows
+- add destination selection and booking confirmation flow
+- add final summary generation and export flow
