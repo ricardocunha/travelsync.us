@@ -6,11 +6,12 @@ type MetricCardProps = {
 
 export function MetricCard({ label, value, accent = "from-amber-200 to-transparent" }: MetricCardProps) {
   return (
-    <div className={`paper-panel relative overflow-hidden rounded-[1.75rem] p-5`}>
-      <div className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b ${accent}`} />
+    <div className="paper-panel metric-band rounded-[1.9rem] p-5">
+      <div className={`pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-br ${accent}`} />
+      <div className="radar-dots" />
       <div className="relative">
         <div className="eyebrow">{label}</div>
-        <div className="section-title mt-4 text-3xl font-semibold">{value}</div>
+        <div className="section-title mt-5 text-[2.3rem] font-semibold leading-[0.92]">{value}</div>
       </div>
     </div>
   );

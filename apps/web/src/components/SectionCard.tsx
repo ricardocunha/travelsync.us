@@ -7,7 +7,7 @@ type SectionCardProps = {
 
 export function SectionCard({ children, className = "" }: SectionCardProps) {
   return (
-    <section className={`paper-panel rounded-[2rem] p-5 sm:p-6 ${className}`.trim()}>
+    <section className={`paper-panel page-enter rounded-[2.1rem] p-5 sm:p-6 ${className}`.trim()}>
       {children}
     </section>
   );

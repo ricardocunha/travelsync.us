@@ -101,7 +101,7 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
   }
 
   return (
-    <div className="space-y-4 rounded-[1.75rem] border border-[color:var(--border-strong)] bg-white/65 p-4">
+    <div className="command-surface space-y-4 rounded-[2rem] p-4 sm:p-5">
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="Guest name">
           <div className="field-shell rounded-2xl px-4 py-3">
@@ -203,11 +203,11 @@ export function ParticipantDraftForm({ countries, onAdd }: ParticipantDraftFormP
         </FormField>
       </div>
 
-      {message ? <p className="text-sm font-semibold text-rose-700">{message}</p> : null}
+      {message ? <p className="text-sm font-semibold text-[color:var(--signal-coral)]">{message}</p> : null}
 
-      <div className="flex justify-end">
+      <div className="flex justify-end border-t border-[rgba(21,34,49,0.08)] pt-3">
         <button
-          className="route-chip rounded-full px-5 py-3 text-sm font-extrabold"
+          className="button-secondary"
           onClick={handleAdd}
           type="button"
         >
