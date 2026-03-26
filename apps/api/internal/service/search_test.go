@@ -100,6 +100,135 @@ func TestSearchServiceBuildsRankedDestinationResults(t *testing.T) {
 	}
 }
 
+func TestSearchServiceStrictModeKeepsViableDestinationWithLateSyntheticOffset(t *testing.T) {
+	ctx := context.Background()
+	plan := models.Plan{
+		ID:                   42,
+		OrganizationID:       1,
+		CreatedByUserID:      1,
+		Name:                 "Team Summit",
+		EventStart:           time.Date(2026, 4, 6, 17, 0, 0, 0, time.UTC),
+		EventEnd:             time.Date(2026, 4, 10, 23, 0, 0, 0, time.UTC),
+		EventTimezone:        "America/Panama",
+		ArrivalBufferHours:   12,
+		DepartureBufferHours: 4,
+		Currency:             "USD",
+		CabinClass:           "ECONOMY",
+		SearchMode:           "strict",
+		Status:               "draft",
+		RegionFilterIDs:      json.RawMessage(`[2]`),
+	}
+
+	participants := []models.PlanParticipant{
+		{ID: 1, PlanID: 42, GuestName: "Ana", DepartureCity: "Brasilia", DepartureAirportID: 301, Status: "confirmed"},
+		{ID: 2, PlanID: 42, GuestName: "John", DepartureCity: "New York", DepartureAirportID: 101, Status: "confirmed"},
+	}
+
+	destinations := []models.Location{
+		{ID: 10, Name: "Panama City", RegionID: 2, Timezone: "America/Panama", IsActive: true},
+	}
+
+	airportsByID := map[int]models.Airport{
+		101: {ID: 101, City: "New York", IATACode: "JFK", Latitude: 40.6413, Longitude: -73.7781, TimezoneCode: "America/New_York"},
+		301: {ID: 301, City: "Brasilia", IATACode: "BSB", Latitude: -15.7939, Longitude: -47.8828, TimezoneCode: "America/Sao_Paulo"},
+		401: {ID: 401, City: "Panama City", IATACode: "PTY", Latitude: 9.0714, Longitude: -79.3835, TimezoneCode: "America/Panama"},
+	}
+
+	referenceRepo := fakeReferenceRepository{
+		destinations: destinations,
+		airportsByID: airportsByID,
+		destinationAirports: map[int][]models.Airport{
+			10: {airportsByID[401]},
+		},
+	}
+	planRepo := &fakePlanRepository{plan: plan}
+	participantRepo := fakeParticipantRepository{participants: participants}
+	searchRepo := &fakeSearchRepository{}
+
+	service := NewSearchService(planRepo, participantRepo, referenceRepo, searchRepo)
+
+	status, err := service.StartSearch(ctx, 42)
+	if err != nil {
+		t.Fatalf("expected strict search to succeed: %v", err)
+	}
+
+	if status.Status != "reviewed" {
+		t.Fatalf("expected status reviewed, got %q", status.Status)
+	}
+	if status.Destinations != 1 {
+		t.Fatalf("expected 1 scored destination, got %d", status.Destinations)
+	}
+
+	results, err := service.ListDestinationResults(ctx, 42)
+	if err != nil {
+		t.Fatalf("expected destination results: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 destination result, got %d", len(results))
+	}
+}
+
+func TestEstimateRoundTripStrictModeAdjustsSyntheticLateArrival(t *testing.T) {
+	plan := models.Plan{
+		ID:                   42,
+		EventStart:           time.Date(2026, 4, 6, 17, 0, 0, 0, time.UTC),
+		EventEnd:             time.Date(2026, 4, 10, 23, 0, 0, 0, time.UTC),
+		EventTimezone:        "America/Panama",
+		ArrivalBufferHours:   12,
+		DepartureBufferHours: 4,
+		Currency:             "USD",
+		CabinClass:           "ECONOMY",
+		SearchMode:           "strict",
+	}
+
+	participant := models.PlanParticipant{
+		ID:                 1,
+		PlanID:             42,
+		DepartureCity:      "New York",
+		DepartureAirportID: 101,
+		Status:             "confirmed",
+	}
+
+	origin := models.Airport{
+		ID:           101,
+		City:         "New York",
+		IATACode:     "JFK",
+		Latitude:     40.6413,
+		Longitude:    -73.7781,
+		TimezoneCode: "America/New_York",
+	}
+	destinationAirport := models.Airport{
+		ID:           401,
+		City:         "Panama City",
+		IATACode:     "PTY",
+		Latitude:     9.0714,
+		Longitude:    -79.3835,
+		TimezoneCode: "America/Panama",
+	}
+	destination := models.Location{
+		ID:       10,
+		Name:     "Panama City",
+		RegionID: 2,
+		Timezone: "America/Panama",
+		IsActive: true,
+	}
+
+	distanceKM := haversineKM(origin.Latitude, origin.Longitude, destinationAirport.Latitude, destinationAirport.Longitude)
+	if offset := estimateArrivalOffsetHours(distanceKM, origin.IATACode, destinationAirport.IATACode); offset <= 0 {
+		t.Fatalf("expected a positive synthetic offset for JFK->PTY, got %.2f", offset)
+	}
+
+	outbound, _, ok := estimateRoundTrip(plan, participant, origin, destinationAirport, destination)
+	if !ok {
+		t.Fatalf("expected strict round trip to remain viable")
+	}
+
+	targetArrival := inLocation(plan.EventStart, destination.Timezone).Add(-time.Duration(plan.ArrivalBufferHours) * time.Hour)
+	if outbound.ArrivalTime.After(targetArrival) {
+		t.Fatalf("expected strict outbound arrival <= target, got %s target %s", outbound.ArrivalTime, targetArrival)
+	}
+}
+
 type fakePlanRepository struct {
 	plan models.Plan
 }

@@ -458,7 +458,7 @@ func estimateRoundTrip(
 	outboundArrival := targetArrival.Add(time.Duration(outboundArrivalOffsetHours * float64(time.Hour)))
 
 	if plan.SearchMode == "strict" && outboundArrival.After(targetArrival) {
-		return models.PlanFlight{}, models.PlanFlight{}, false
+		outboundArrival = strictModeArrival(targetArrival, originAirport.IATACode, destinationAirport.IATACode)
 	}
 
 	outboundDeparture := outboundArrival.Add(-time.Duration(durationMinutes) * time.Minute)
@@ -655,6 +655,12 @@ func estimateArrivalOffsetHours(distanceKM float64, origin string, destination s
 		base += 1
 	}
 	return base
+}
+
+func strictModeArrival(targetArrival time.Time, origin string, destination string) time.Time {
+	// Keep deterministic variation in mock mode while never violating strict arrival.
+	leadHours := float64(stableInt(origin+destination+"strict") % 4)
+	return targetArrival.Add(-time.Duration(leadHours * float64(time.Hour)))
 }
 
 func estimateStops(distanceKM float64) int {
