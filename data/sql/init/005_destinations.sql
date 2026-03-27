@@ -11,21 +11,43 @@ CREATE TABLE locations (
     FOREIGN KEY (region_id) REFERENCES regions(id)
 );
 
--- Starter curated destination seed based on the PRD examples.
--- Expand this file to the full 70+ destination catalog in a later data pass.
+-- Expanded curated destination seed based on PRD regional examples.
+-- This is still a compact baseline and can be extended toward the full 70+ catalog.
 INSERT INTO locations (name, country_id, region_id, latitude, longitude, timezone) VALUES
 ('New York', (SELECT id FROM countries WHERE name = 'United States'), (SELECT id FROM regions WHERE name = 'North America'), 40.7128000, -74.0060000, 'America/New_York'),
 ('Toronto', (SELECT id FROM countries WHERE name = 'Canada'), (SELECT id FROM regions WHERE name = 'North America'), 43.6532000, -79.3832000, 'America/Toronto'),
 ('Miami', (SELECT id FROM countries WHERE name = 'United States'), (SELECT id FROM regions WHERE name = 'North America'), 25.7617000, -80.1918000, 'America/New_York'),
+('Los Angeles', (SELECT id FROM countries WHERE name = 'United States'), (SELECT id FROM regions WHERE name = 'North America'), 34.0522000, -118.2437000, 'America/Los_Angeles'),
+('Chicago', (SELECT id FROM countries WHERE name = 'United States'), (SELECT id FROM regions WHERE name = 'North America'), 41.8781000, -87.6298000, 'America/Chicago'),
 ('Vancouver', (SELECT id FROM countries WHERE name = 'Canada'), (SELECT id FROM regions WHERE name = 'North America'), 49.2827000, -123.1207000, 'America/Vancouver'),
 ('Panama City', (SELECT id FROM countries WHERE name = 'Panama'), (SELECT id FROM regions WHERE name = 'Central America & Caribbean'), 8.9824000, -79.5199000, 'America/Panama'),
+('Cancun', (SELECT id FROM countries WHERE name = 'Mexico'), (SELECT id FROM regions WHERE name = 'Central America & Caribbean'), 21.1619000, -86.8515000, 'America/Cancun'),
+('Santo Domingo', (SELECT id FROM countries WHERE name = 'Dominican Republic'), (SELECT id FROM regions WHERE name = 'Central America & Caribbean'), 18.4861000, -69.9312000, 'America/Santo_Domingo'),
+('San Jose', (SELECT id FROM countries WHERE name = 'Costa Rica'), (SELECT id FROM regions WHERE name = 'Central America & Caribbean'), 9.9281000, -84.0907000, 'America/Costa_Rica'),
+('San Juan', (SELECT id FROM countries WHERE name = 'Puerto Rico'), (SELECT id FROM regions WHERE name = 'Central America & Caribbean'), 18.4655000, -66.1057000, 'America/Puerto_Rico'),
+('Brasilia', (SELECT id FROM countries WHERE name = 'Brazil'), (SELECT id FROM regions WHERE name = 'South America'), -15.7939000, -47.8828000, 'America/Sao_Paulo'),
 ('São Paulo', (SELECT id FROM countries WHERE name = 'Brazil'), (SELECT id FROM regions WHERE name = 'South America'), -23.5505000, -46.6333000, 'America/Sao_Paulo'),
 ('Bogota', (SELECT id FROM countries WHERE name = 'Colombia'), (SELECT id FROM regions WHERE name = 'South America'), 4.7110000, -74.0721000, 'America/Bogota'),
+('Medellin', (SELECT id FROM countries WHERE name = 'Colombia'), (SELECT id FROM regions WHERE name = 'South America'), 6.2442000, -75.5812000, 'America/Bogota'),
+('Lima', (SELECT id FROM countries WHERE name = 'Peru'), (SELECT id FROM regions WHERE name = 'South America'), -12.0464000, -77.0428000, 'America/Lima'),
 ('Buenos Aires', (SELECT id FROM countries WHERE name = 'Argentina'), (SELECT id FROM regions WHERE name = 'South America'), -34.6037000, -58.3816000, 'America/Argentina/Buenos_Aires'),
 ('London', (SELECT id FROM countries WHERE name = 'United Kingdom'), (SELECT id FROM regions WHERE name = 'Europe'), 51.5072000, -0.1276000, 'Europe/London'),
 ('Paris', (SELECT id FROM countries WHERE name = 'France'), (SELECT id FROM regions WHERE name = 'Europe'), 48.8566000, 2.3522000, 'Europe/Paris'),
+('Frankfurt', (SELECT id FROM countries WHERE name = 'Germany'), (SELECT id FROM regions WHERE name = 'Europe'), 50.1109000, 8.6821000, 'Europe/Berlin'),
+('Madrid', (SELECT id FROM countries WHERE name = 'Spain'), (SELECT id FROM regions WHERE name = 'Europe'), 40.4168000, -3.7038000, 'Europe/Madrid'),
+('Rome', (SELECT id FROM countries WHERE name = 'Italy'), (SELECT id FROM regions WHERE name = 'Europe'), 41.9028000, 12.4964000, 'Europe/Rome'),
+('Amsterdam', (SELECT id FROM countries WHERE name = 'Netherlands'), (SELECT id FROM regions WHERE name = 'Europe'), 52.3676000, 4.9041000, 'Europe/Amsterdam'),
+('Istanbul', (SELECT id FROM countries WHERE name = 'Turkey'), (SELECT id FROM regions WHERE name = 'Europe'), 41.0082000, 28.9784000, 'Europe/Istanbul'),
 ('Dubai', (SELECT id FROM countries WHERE name = 'United Arab Emirates'), (SELECT id FROM regions WHERE name = 'Asia'), 25.2048000, 55.2708000, 'Asia/Dubai'),
 ('Tokyo', (SELECT id FROM countries WHERE name = 'Japan'), (SELECT id FROM regions WHERE name = 'Asia'), 35.6762000, 139.6503000, 'Asia/Tokyo'),
 ('Singapore', (SELECT id FROM countries WHERE name = 'Singapore'), (SELECT id FROM regions WHERE name = 'Asia'), 1.3521000, 103.8198000, 'Asia/Singapore'),
+('Bangkok', (SELECT id FROM countries WHERE name = 'Thailand'), (SELECT id FROM regions WHERE name = 'Asia'), 13.7563000, 100.5018000, 'Asia/Bangkok'),
+('Seoul', (SELECT id FROM countries WHERE name = 'South Korea'), (SELECT id FROM regions WHERE name = 'Asia'), 37.5665000, 126.9780000, 'Asia/Seoul'),
 ('Johannesburg', (SELECT id FROM countries WHERE name = 'South Africa'), (SELECT id FROM regions WHERE name = 'Africa'), -26.2041000, 28.0473000, 'Africa/Johannesburg'),
-('Sydney', (SELECT id FROM countries WHERE name = 'Australia'), (SELECT id FROM regions WHERE name = 'Oceania'), -33.8688000, 151.2093000, 'Australia/Sydney');
+('Cairo', (SELECT id FROM countries WHERE name = 'Egypt'), (SELECT id FROM regions WHERE name = 'Africa'), 30.0444000, 31.2357000, 'Africa/Cairo'),
+('Nairobi', (SELECT id FROM countries WHERE name = 'Kenya'), (SELECT id FROM regions WHERE name = 'Africa'), -1.2864000, 36.8172000, 'Africa/Nairobi'),
+('Casablanca', (SELECT id FROM countries WHERE name = 'Morocco'), (SELECT id FROM regions WHERE name = 'Africa'), 33.5731000, -7.5898000, 'Africa/Casablanca'),
+('Sydney', (SELECT id FROM countries WHERE name = 'Australia'), (SELECT id FROM regions WHERE name = 'Oceania'), -33.8688000, 151.2093000, 'Australia/Sydney'),
+('Melbourne', (SELECT id FROM countries WHERE name = 'Australia'), (SELECT id FROM regions WHERE name = 'Oceania'), -37.8136000, 144.9631000, 'Australia/Melbourne'),
+('Auckland', (SELECT id FROM countries WHERE name = 'New Zealand'), (SELECT id FROM regions WHERE name = 'Oceania'), -36.8485000, 174.7633000, 'Pacific/Auckland'),
+('Brisbane', (SELECT id FROM countries WHERE name = 'Australia'), (SELECT id FROM regions WHERE name = 'Oceania'), -27.4698000, 153.0251000, 'Australia/Brisbane');
